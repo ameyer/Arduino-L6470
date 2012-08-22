@@ -103,7 +103,6 @@ void L6470::init(){
 	
 }
 
-
 boolean L6470::isBusy(){
 	int status = getStatus();
 	return !((status >> 1) & 0b1);
