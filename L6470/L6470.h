@@ -277,8 +277,8 @@ class L6470{
 	void resetDev();
 	void softStop();
 	void hardStop();
-	void softHiZ();
-	void hardHiZ();
+	void softFree();
+	void free();
 	int getStatus();
 
     

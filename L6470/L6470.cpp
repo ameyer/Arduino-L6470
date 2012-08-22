@@ -547,13 +547,13 @@ void L6470::hardStop(){
   Xfer(HARD_STOP);
 }
 
-// Decelerate the motor and put the bridges in Hi-Z state.
-void L6470::softHiZ(){
+// Decelerate the motor and disengage
+void L6470::softFree(){
   Xfer(SOFT_HIZ);
 }
 
-// Put the bridges in Hi-Z state immediately with no deceleration.
-void L6470::hardHiZ(){
+// disengage the motor immediately with no deceleration.
+void L6470::free(){
   Xfer(HARD_HIZ);
 }
 
