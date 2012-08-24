@@ -262,15 +262,21 @@ class L6470{
 	void Step_Clock(byte dir);
 	
 	void goHome();
+	void setAsHome();
+	
 	void goMark();
 	void move(long n_step);
-	void goTo(unsigned long pos);
+	void goTo(long pos);
 	void goTo_DIR(byte dir, unsigned long pos);
 	void goUntil(byte act, byte dir, unsigned long spd);
 	
 	boolean isBusy();
 	
 	void releaseSW(byte act, byte dir);
+	
+	long getPos();
+	void setMark();
+	void setMark(long value);
 	
 	
 	void resetPos();
@@ -283,6 +289,9 @@ class L6470{
 
     
   private:
+  	
+  	long convert(unsigned long val);
+  	
   	void SetParam(byte param, unsigned long value);
 	unsigned long GetParam(byte param);
   
@@ -297,6 +306,8 @@ class L6470{
 	byte Xfer(byte data); 
 	
 	int _SSPin;
+	
+	
 };
 
 #endif
