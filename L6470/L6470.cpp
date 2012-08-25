@@ -375,8 +375,16 @@ void L6470::setMark(long value){
 
 
 void L6470::setMark(){
-	unsigned long pos = getPos();
-	SetParam(MARK, pos);
+	unsigned long value = getPos();
+	
+		Xfer(MARK);
+	if (value > 0x3FFFFF) value = 0x3FFFFF;
+	if (value < -0x3FFFFF) value = -0x3FFFFF;
+	
+	
+	Xfer((byte)(value >> 16));
+	Xfer((byte)(value >> 8));
+	Xfer((byte)(value));
 }
 
 
