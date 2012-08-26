@@ -274,6 +274,7 @@ class L6470{
 	
 	void releaseSW(byte act, byte dir);
 	
+	float getSpeed();
 	long getPos();
 	void setMark();
 	void setMark(long value);

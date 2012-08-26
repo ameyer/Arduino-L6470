@@ -194,6 +194,28 @@ long L6470::getPos(){
 	return convert(position);
 }
 
+float L6470::getSpeed(){
+
+/*
+ SPEED
+The SPEED register contains the current motor speed, expressed in step/tick (format unsigned fixed point 0.28).
+In order to convert the SPEED value in step/s the following formula can be used:
+Equation 4
+where SPEED is the integer number stored into the register and tick is 250 ns.
+The available range is from 0 to 15625 step/s with a resolution of 0.015 step/s.
+Note: The range effectively available to the user is limited by the MAX_SPEED parameter.
+
+*/
+
+	return (float) GetParam(SPEED);
+	
+	//return (float) speed * pow(8, -22);
+	
+	//return FSCalc(speed); NEEDS FIX
+}
+
+
+
 
 
 
@@ -375,7 +397,7 @@ void L6470::setMark(long value){
 
 
 void L6470::setMark(){
-	unsigned long value = getPos();
+	long value = getPos();
 	
 		Xfer(MARK);
 	if (value > 0x3FFFFF) value = 0x3FFFFF;
@@ -499,6 +521,8 @@ unsigned long L6470::SpdCalc(float stepsPerSec){
 	if( (unsigned long) long(temp) > 0x000FFFFF) return 0x000FFFFF;
 	else return (unsigned long)temp;
 }
+
+
 
 // Generalization of the subsections of the register read/write functionality.
 //  We want the end user to just write the value without worrying about length,
