@@ -251,7 +251,7 @@ class L6470{
     void setMinSpeed(int speed);
     void setAcc(float acceleration);
     void setDec(float deceleration);
-    void setOverCurrent(int ma_current);
+    void setOverCurrent(unsigned int ma_current);
     void setThresholdSpeed(float threshold);
     void setStallCurrent(float ma_current);
     
@@ -267,7 +267,7 @@ class L6470{
 	void goMark();
 	void move(long n_step);
 	void goTo(long pos);
-	void goTo_DIR(byte dir, unsigned long pos);
+	void goTo_DIR(byte dir, long pos);
 	void goUntil(byte act, byte dir, unsigned long spd);
 	
 	boolean isBusy();
