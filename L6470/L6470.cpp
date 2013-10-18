@@ -11,7 +11,7 @@
 
 L6470::L6470(int SSPin){
 	_SSPin = SSPin;
-	Serial.begin(9600);
+	// Serial.begin(9600);
 }
 
 void L6470::init(){
@@ -492,11 +492,11 @@ unsigned long L6470::Param(unsigned long value, byte bit_len){
 	//  value, then we shift the received value back by the same amount and
 	//  store it until return time.
 	if (byte_len == 3) {
-	  ret_val |= Xfer((byte)(value>>16)) << 16;
+	  ret_val |= long(Xfer((byte)(value>>16))) << 16;
 	  //Serial.println(ret_val, HEX);
 	}
 	if (byte_len >= 2) {
-	  ret_val |= Xfer((byte)(value>>8)) << 8;
+	  ret_val |= long(Xfer((byte)(value>>8))) << 8;
 	  //Serial.println(ret_val, HEX);
 	}
 	if (byte_len >= 1) {
