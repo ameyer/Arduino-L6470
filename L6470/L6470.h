@@ -6,23 +6,22 @@
 
 
 
-#ifndef L6470_h
-#define L6470_h
+#ifndef _L6470_H_
+#define _L6470_H_
 
 #include <Arduino.h>
 #include <SPI.h>
-
 
 #define SLAVE_SELECT_PIN 10  // Wire this to the CSN pin
 #define MOSI             11  // Wire this to the SDI pin
 #define MISO             12  // Wire this to the SDO pin
 #define SCK              13  // Wire this to the CK pin
-#define RESET      		6   // Wire this to the STBY line
-#define BUSYN      		4   // Wire this to the BSYN line
+#define RESET      				6  // Wire this to the STBY line
+#define BUSYN      				4  // Wire this to the BSYN line
 
 #define STAT1            14  // Hooked to an LED on the test jig
 #define STAT2            15  // Hooked to an LED on the test jig
-#define SWITCH           8   // Hooked to the switch input and a pB on the jig
+#define SWITCH            8  // Hooked to the switch input and a pB on the jig
 
 // constant definitions for overcurrent thresholds. Write these values to
 //  register dSPIN_OCD_TH to set the level at which an overcurrent even occurs.
@@ -43,7 +42,7 @@
 #define OCD_TH_5625mA 0x0E
 #define OCD_TH_6000mA 0x0F
 
-// STEP_MODE option values.
+// L6470_STEP_MODE option values.
 // First comes the "microsteps per step" options...
 #define STEP_MODE_STEP_SEL 0x07  // Mask for these bits only.
 #define STEP_SEL_1     0x00
@@ -74,9 +73,9 @@
 #define SYNC_SEL_32  0x60
 #define SYNC_SEL_64  0x70
 
-// Bit names for the ALARM_EN register.
+// Bit names for the L6470_ALARM_EN register.
 //  Each of these bits defines one potential alarm condition.
-//  When one of these conditions occurs and the respective bit in ALARM_EN is set,
+//  When one of these conditions occurs and the respective bit in L6470_ALARM_EN is set,
 //  the FLAG pin will go low. The register must be queried to determine which event
 //  caused the alarm.
 #define ALARM_EN_OVERCURRENT       0x01
@@ -88,7 +87,7 @@
 #define ALARM_EN_SW_TURN_ON        0x40
 #define ALARM_EN_WRONG_NPERF_CMD   0x80
 
-// CONFIG register renames.
+// L6470_CONFIG register renames.
 
 // Oscillator options.
 // The dSPIN needs to know what the clock frequency is because it uses that for some
@@ -159,9 +158,9 @@
 #define STATUS_BUSY                    0x0002 // mirrors BUSY pin
 #define STATUS_SW_F                    0x0004 // low when switch open, high when closed
 #define STATUS_SW_EVN                  0x0008 // active high, set on switch falling edge,
-                                                    //  cleared by reading STATUS
+                                                    //  cleared by reading L6470_STATUS
 #define STATUS_DIR                     0x0010 // Indicates current motor direction.
-                                                    //  High is FWD, Low is REV.
+                                                    //  High is dSPIN_FWD, Low is dSPIN_REV.
 #define STATUS_NOTPERF_CMD             0x0080 // Last command not performed.
 #define STATUS_WRONG_CMD               0x0100 // Last command not valid.
 #define STATUS_UVLO                    0x0200 // Undervoltage lockout is active
@@ -181,81 +180,80 @@
 
 // Register address redefines.
 //  See the Param_Handler() function for more info about these.
-#define ABS_POS              0x01
-#define EL_POS               0x02
-#define MARK                 0x03
-#define SPEED                0x04
-#define ACC                  0x05
-#define DEC                  0x06
-#define MAX_SPEED            0x07
-#define MIN_SPEED            0x08
-#define FS_SPD               0x15
-#define KVAL_HOLD            0x09
-#define KVAL_RUN             0x0A
-#define KVAL_ACC             0x0B
-#define KVAL_DEC             0x0C
-#define INT_SPD              0x0D
-#define ST_SLP               0x0E
-#define FN_SLP_ACC           0x0F
-#define FN_SLP_DEC           0x10
-#define K_THERM              0x11
-#define ADC_OUT              0x12
-#define OCD_TH               0x13
-#define STALL_TH             0x14
-#define STEP_MODE            0x16
-#define ALARM_EN             0x17
-#define CONFIG               0x18
-#define STATUS               0x19
+#define L6470_ABS_POS        	0x01
+#define L6470_EL_POS         	0x02
+#define L6470_MARK           	0x03
+#define L6470_SPEED          	0x04
+#define L6470_ACC            	0x05
+#define L6470_DEC            	0x06
+#define L6470_MAX_SPEED      	0x07
+#define L6470_MIN_SPEED      	0x08
+#define L6470_FS_SPD         	0x15
+#define L6470_KVAL_HOLD      	0x09
+#define L6470_KVAL_RUN       	0x0A
+#define L6470_KVAL_ACC       	0x0B
+#define L6470_KVAL_DEC       	0x0C
+#define L6470_INT_SPD        	0x0D
+#define L6470_ST_SLP         	0x0E
+#define L6470_FN_SLP_ACC     	0x0F
+#define L6470_FN_SLP_DEC     	0x10
+#define L6470_K_THERM        	0x11
+#define L6470_ADC_OUT        	0x12
+#define L6470_OCD_TH         	0x13
+#define L6470_STALL_TH       	0x14
+#define L6470_STEP_MODE      	0x16
+#define L6470_ALARM_EN       	0x17
+#define L6470_CONFIG         	0x18
+#define L6470_STATUS         	0x19
 
 //dSPIN commands
-#define NOP                  0x00
-#define SET_PARAM            0x00
-#define GET_PARAM            0x20
-#define RUN                  0x50
-#define STEP_CLOCK           0x58
-#define MOVE                 0x40
-#define GOTO                 0x60
-#define GOTO_DIR             0x68
-#define GO_UNTIL             0x82
-#define RELEASE_SW           0x92
-#define GO_HOME              0x70
-#define GO_MARK              0x78
-#define RESET_POS            0xD8
-#define RESET_DEVICE         0xC0
-#define SOFT_STOP            0xB0
-#define HARD_STOP            0xB8
-#define SOFT_HIZ             0xA0
-#define HARD_HIZ             0xA8
-#define GET_STATUS           0xD0
+#define dSPIN_NOP            	0x00
+#define dSPIN_SET_PARAM      	0x00
+#define dSPIN_GET_PARAM      	0x20
+#define dSPIN_RUN            	0x50
+#define dSPIN_STEP_CLOCK     	0x58
+#define dSPIN_MOVE           	0x40
+#define dSPIN_GOTO           	0x60
+#define dSPIN_GOTO_DIR       	0x68
+#define dSPIN_GO_UNTIL       	0x82
+#define dSPIN_RELEASE_SW     	0x92
+#define dSPIN_GO_HOME        	0x70
+#define dSPIN_GO_MARK        	0x78
+#define dSPIN_RESET_POS      	0xD8
+#define dSPIN_RESET_DEVICE   	0xC0
+#define dSPIN_SOFT_STOP      	0xB0
+#define dSPIN_HARD_STOP      	0xB8
+#define dSPIN_SOFT_HIZ       	0xA0
+#define dSPIN_HARD_HIZ       	0xA8
+#define dSPIN_GET_STATUS     	0xD0
 
 /* dSPIN direction options */
-#define FWD  0x01
-#define REV  0x00
+#define dSPIN_FWD  					 	0x01
+#define dSPIN_REV  					 	0x00
 
 /* dSPIN action options */
-#define ACTION_RESET  0x00
-#define ACTION_COPY   0x01
+#define dSPIN_ACTION_RESET   	0x00
+#define dSPIN_ACTION_COPY    	0x01
 
-
-class L6470{
+class L6470 {
 
   public:
 
-    L6470(int SSPin);
+  L6470(int SSPin);
 
 	void init();
 
-    void setMicroSteps(int microSteps);
-    void setCurrent(int current);
-    void setMaxSpeed(int speed);
-    void setMinSpeed(int speed);
-    void setAcc(float acceleration);
-    void setDec(float deceleration);
-    void setOverCurrent(unsigned int ma_current);
-    void setThresholdSpeed(float threshold);
-    void setStallCurrent(float ma_current);
+  void setMicroSteps(int microSteps);
+  void setCurrent(int current);
+  void setMaxSpeed(int speed);
+  void setMinSpeed(int speed);
+  void setAcc(float acceleration);
+  void setDec(float deceleration);
+  void setOverCurrent(unsigned int ma_current);
+  void setThresholdSpeed(float threshold);
+  void setStallCurrent(float ma_current);
 
-	unsigned long ParamHandler(byte param, unsigned long value);
+	unsigned long ParamHandler(const byte param, const unsigned long value);
 	void SetLowSpeedOpt(boolean enable);
 
 	void run(byte dir, float spd);
@@ -279,7 +277,6 @@ class L6470{
 	void setMark();
 	void setMark(long value);
 
-
 	void resetPos();
 	void resetDev();
 	void softStop();
@@ -290,9 +287,9 @@ class L6470{
 
   private:
 
-  	long convert(unsigned long val);
+	long convert(unsigned long val);
 
-  	void SetParam(byte param, unsigned long value);
+	void SetParam(byte param, unsigned long value);
 	unsigned long GetParam(byte param);
 
 	unsigned long AccCalc(float stepsPerSecPerSec);
@@ -306,8 +303,6 @@ class L6470{
 	byte Xfer(byte data);
 
 	int _SSPin;
-
-
 };
 
-#endif
+#endif // _L6470_H_
