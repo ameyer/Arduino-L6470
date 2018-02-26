@@ -24,7 +24,7 @@
 #define STAT2            15  // Hooked to an LED on the test jig
 #define SWITCH           8   // Hooked to the switch input and a pB on the jig
 
-// constant definitions for overcurrent thresholds. Write these values to 
+// constant definitions for overcurrent thresholds. Write these values to
 //  register dSPIN_OCD_TH to set the level at which an overcurrent even occurs.
 #define OCD_TH_375mA  0x00
 #define OCD_TH_750mA  0x01
@@ -244,7 +244,7 @@ class L6470{
     L6470(int SSPin);
 
 	void init();
-	
+
     void setMicroSteps(int microSteps);
     void setCurrent(int current);
     void setMaxSpeed(int speed);
@@ -254,32 +254,32 @@ class L6470{
     void setOverCurrent(unsigned int ma_current);
     void setThresholdSpeed(float threshold);
     void setStallCurrent(float ma_current);
-    
+
 	unsigned long ParamHandler(byte param, unsigned long value);
 	void SetLowSpeedOpt(boolean enable);
-	
+
 	void run(byte dir, float spd);
 	void Step_Clock(byte dir);
-	
+
 	void goHome();
 	void setAsHome();
-	
+
 	void goMark();
 	void move(long n_step);
 	void goTo(long pos);
 	void goTo_DIR(byte dir, long pos);
 	void goUntil(byte act, byte dir, unsigned long spd);
-	
+
 	boolean isBusy();
-	
+
 	void releaseSW(byte act, byte dir);
-	
+
 	float getSpeed();
 	long getPos();
 	void setMark();
 	void setMark(long value);
-	
-	
+
+
 	void resetPos();
 	void resetDev();
 	void softStop();
@@ -288,14 +288,13 @@ class L6470{
 	void free();
 	int getStatus();
 
-    
   private:
-  	
+
   	long convert(unsigned long val);
-  	
+
   	void SetParam(byte param, unsigned long value);
 	unsigned long GetParam(byte param);
-  
+
 	unsigned long AccCalc(float stepsPerSecPerSec);
 	unsigned long DecCalc(float stepsPerSecPerSec);
 	unsigned long MaxSpdCalc(float stepsPerSec);
@@ -304,11 +303,11 @@ class L6470{
 	unsigned long IntSpdCalc(float stepsPerSec);
 	unsigned long SpdCalc(float stepsPerSec);
 	unsigned long Param(unsigned long value, byte bit_len);
-	byte Xfer(byte data); 
-	
+	byte Xfer(byte data);
+
 	int _SSPin;
-	
-	
+
+
 };
 
 #endif
