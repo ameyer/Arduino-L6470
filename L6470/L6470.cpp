@@ -53,9 +53,9 @@ void L6470::init(){
 	// First things first: let's check communications. The CONFIG register should
 	//  power up to 0x2E88, so we can use that to check the communications.
 	if (GetParam(CONFIG) == 0x2E88){
-		Serial.println('good to go');
+		Serial.println("good to go");
 	}else{
-		Serial.println('Comm issue');
+		Serial.println("Comm issue");
 	}
 
 	// First, let's set the step mode register:
