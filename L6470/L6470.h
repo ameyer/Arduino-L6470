@@ -23,7 +23,7 @@
 #define STAT2            15  // Hooked to an LED on the test jig
 #define SWITCH            8  // Hooked to the switch input and a pB on the jig
 
-// constant definitions for overcurrent thresholds. Write these values to
+// Constant definitions for overcurrent thresholds. Write these values to
 //  register dSPIN_OCD_TH to set the level at which an overcurrent even occurs.
 #define OCD_TH_375mA  0x00
 #define OCD_TH_750mA  0x01
@@ -133,24 +133,24 @@
 // Integer divisors for PWM sinewave generation
 //  See page 32 of the datasheet for more information on this.
 #define CONFIG_F_PWM_DEC               0x1C00      // mask for this bit field
-#define CONFIG_PWM_MUL_0_625           (0x00)<<10
-#define CONFIG_PWM_MUL_0_75            (0x01)<<10
-#define CONFIG_PWM_MUL_0_875           (0x02)<<10
-#define CONFIG_PWM_MUL_1               (0x03)<<10
-#define CONFIG_PWM_MUL_1_25            (0x04)<<10
-#define CONFIG_PWM_MUL_1_5             (0x05)<<10
-#define CONFIG_PWM_MUL_1_75            (0x06)<<10
-#define CONFIG_PWM_MUL_2               (0x07)<<10
+#define CONFIG_PWM_MUL_0_625           (0x00<<10)
+#define CONFIG_PWM_MUL_0_75            (0x01<<10)
+#define CONFIG_PWM_MUL_0_875           (0x02<<10)
+#define CONFIG_PWM_MUL_1               (0x03<<10)
+#define CONFIG_PWM_MUL_1_25            (0x04<<10)
+#define CONFIG_PWM_MUL_1_5             (0x05<<10)
+#define CONFIG_PWM_MUL_1_75            (0x06<<10)
+#define CONFIG_PWM_MUL_2               (0x07<<10)
 
 // Multiplier for the PWM sinewave frequency
 #define CONFIG_F_PWM_INT               0xE000     // mask for this bit field.
-#define CONFIG_PWM_DIV_1               (0x00)<<13
-#define CONFIG_PWM_DIV_2               (0x01)<<13
-#define CONFIG_PWM_DIV_3               (0x02)<<13
-#define CONFIG_PWM_DIV_4               (0x03)<<13
-#define CONFIG_PWM_DIV_5               (0x04)<<13
-#define CONFIG_PWM_DIV_6               (0x05)<<13
-#define CONFIG_PWM_DIV_7               (0x06)<<13
+#define CONFIG_PWM_DIV_1               (0x00<<13)
+#define CONFIG_PWM_DIV_2               (0x01<<13)
+#define CONFIG_PWM_DIV_3               (0x02<<13)
+#define CONFIG_PWM_DIV_4               (0x03<<13)
+#define CONFIG_PWM_DIV_5               (0x04<<13)
+#define CONFIG_PWM_DIV_6               (0x05<<13)
+#define CONFIG_PWM_DIV_7               (0x06<<13)
 
 // Status register bit renames- read-only bits conferring information about the
 //  device to the user.
@@ -173,10 +173,10 @@
 
 // Status register motor status field
 #define STATUS_MOT_STATUS                0x0060      // field mask
-#define STATUS_MOT_STATUS_STOPPED       (0x0000)<<13 // Motor stopped
-#define STATUS_MOT_STATUS_ACCELERATION  (0x0001)<<13 // Motor accelerating
-#define STATUS_MOT_STATUS_DECELERATION  (0x0002)<<13 // Motor decelerating
-#define STATUS_MOT_STATUS_CONST_SPD     (0x0003)<<13 // Motor at constant speed
+#define STATUS_MOT_STATUS_STOPPED       (0x0000<<13) // Motor stopped
+#define STATUS_MOT_STATUS_ACCELERATION  (0x0001<<13) // Motor accelerating
+#define STATUS_MOT_STATUS_DECELERATION  (0x0002<<13) // Motor decelerating
+#define STATUS_MOT_STATUS_CONST_SPD     (0x0003<<13) // Motor at constant speed
 
 // Register address redefines.
 //  See the Param_Handler() function for more info about these.
@@ -206,7 +206,7 @@
 #define L6470_CONFIG         	0x18
 #define L6470_STATUS         	0x19
 
-//dSPIN commands
+// dSPIN commands
 #define dSPIN_NOP            	0x00
 #define dSPIN_SET_PARAM      	0x00
 #define dSPIN_GET_PARAM      	0x20
@@ -227,11 +227,11 @@
 #define dSPIN_HARD_HIZ       	0xA8
 #define dSPIN_GET_STATUS     	0xD0
 
-/* dSPIN direction options */
+// dSPIN direction options
 #define dSPIN_FWD  					 	0x01
 #define dSPIN_REV  					 	0x00
 
-/* dSPIN action options */
+// dSPIN action options
 #define dSPIN_ACTION_RESET   	0x00
 #define dSPIN_ACTION_COPY    	0x01
 
@@ -239,38 +239,38 @@ class L6470 {
 
   public:
 
-  L6470(int SSPin);
+  L6470(const int SSPin);
 
 	void init();
 
   void setMicroSteps(int microSteps);
-  void setCurrent(int current);
-  void setMaxSpeed(int speed);
-  void setMinSpeed(int speed);
-  void setAcc(float acceleration);
-  void setDec(float deceleration);
+  void setCurrent(const int current); // NOT IMPLEMENTED
+  void setMaxSpeed(const int speed);
+  void setMinSpeed(const int speed);
+  void setAcc(const float acceleration);
+  void setDec(const float deceleration);
   void setOverCurrent(unsigned int ma_current);
-  void setThresholdSpeed(float threshold);
+  void setThresholdSpeed(const float threshold);
   void setStallCurrent(float ma_current);
 
 	unsigned long ParamHandler(const byte param, const unsigned long value);
 	void SetLowSpeedOpt(boolean enable);
 
-	void run(byte dir, float spd);
-	void Step_Clock(byte dir);
+	void run(const byte dir, const float spd);
+	void Step_Clock(const byte dir);
 
 	void goHome();
 	void setAsHome();
 
 	void goMark();
-	void move(long n_step);
+	void move(const long n_step);
 	void goTo(long pos);
-	void goTo_DIR(byte dir, long pos);
-	void goUntil(byte act, byte dir, unsigned long spd);
+	void goTo_DIR(const byte dir, long pos);
+	void goUntil(const byte act, const byte dir, unsigned long spd);
 
 	boolean isBusy();
 
-	void releaseSW(byte act, byte dir);
+	void releaseSW(const byte act, const byte dir);
 
 	float getSpeed();
 	long getPos();
@@ -289,17 +289,17 @@ class L6470 {
 
 	long convert(unsigned long val);
 
-	void SetParam(byte param, unsigned long value);
-	unsigned long GetParam(byte param);
+	void SetParam(const byte param, const unsigned long value);
+	unsigned long GetParam(const byte param);
 
-	unsigned long AccCalc(float stepsPerSecPerSec);
-	unsigned long DecCalc(float stepsPerSecPerSec);
-	unsigned long MaxSpdCalc(float stepsPerSec);
-	unsigned long MinSpdCalc(float stepsPerSec);
-	unsigned long FSCalc(float stepsPerSec);
-	unsigned long IntSpdCalc(float stepsPerSec);
-	unsigned long SpdCalc(float stepsPerSec);
-	unsigned long Param(unsigned long value, byte bit_len);
+	unsigned long AccCalc(const float stepsPerSecPerSec);
+	unsigned long DecCalc(const float stepsPerSecPerSec);
+	unsigned long MaxSpdCalc(const float stepsPerSec);
+	unsigned long MinSpdCalc(const float stepsPerSec);
+	unsigned long FSCalc(const float stepsPerSec);
+	unsigned long IntSpdCalc(const float stepsPerSec);
+	unsigned long SpdCalc(const float stepsPerSec);
+	unsigned long Param(unsigned long value, const byte bit_len);
 	byte Xfer(byte data);
 
 	int _SSPin;
