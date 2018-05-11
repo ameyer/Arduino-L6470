@@ -1,13 +1,13 @@
 {
   "name": "Arduino-L6470",
   "keywords": "l6470, stepper, driver",
-  "description": "Library supporting the L6470 stepper driver",
+  "description": "L6470 stepper driver library",
   "repository":
   {
     "type": "git",
     "url": "https://github.com/ameyer/Arduino-L6470.git"
   },
-  "version": "0.6",
+  "version": "0.6.1",
   "authors":
   [
     {

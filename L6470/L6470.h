@@ -10,6 +10,8 @@
 #include <Arduino.h>
 #include <SPI.h>
 
+#define L6470_LIBRARY_VERSION 0x000601
+
 //#define SCK    10  // Wire this to the CSN pin
 //#define MOSI   11  // Wire this to the SDI pin
 //#define MISO   12  // Wire this to the SDO pin
