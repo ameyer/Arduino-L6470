@@ -4,24 +4,22 @@
 //Released as MIT license
 ////////////////////////////////////////////////////////////
 
-
-
 #ifndef _L6470_H_
 #define _L6470_H_
 
 #include <Arduino.h>
 #include <SPI.h>
 
-#define SLAVE_SELECT_PIN 10  // Wire this to the CSN pin
-#define MOSI             11  // Wire this to the SDI pin
-#define MISO             12  // Wire this to the SDO pin
-#define SCK              13  // Wire this to the CK pin
-#define RESET      				6  // Wire this to the STBY line
-#define BUSYN      				4  // Wire this to the BSYN line
+//#define SCK    10  // Wire this to the CSN pin
+//#define MOSI   11  // Wire this to the SDI pin
+//#define MISO   12  // Wire this to the SDO pin
+//#define SS_PIN 16  // Wire this to the CK pin
+#define RESET   6  // Wire this to the STBY line
+#define BUSYN   4  // Wire this to the BSYN line
 
-#define STAT1            14  // Hooked to an LED on the test jig
-#define STAT2            15  // Hooked to an LED on the test jig
-#define SWITCH            8  // Hooked to the switch input and a pB on the jig
+#define STAT1    14  // Hooked to an LED on the test jig
+#define STAT2    15  // Hooked to an LED on the test jig
+#define SWITCH    8  // Hooked to the switch input and a pB on the jig
 
 // Constant definitions for overcurrent thresholds. Write these values to
 //  register dSPIN_OCD_TH to set the level at which an overcurrent even occurs.
@@ -57,7 +55,7 @@
 // ...next, define the SYNC_EN bit. When set, the BUSYN pin will instead
 //  output a clock related to the full-step frequency as defined by the
 //  SYNC_SEL bits below.
-#define STEP_MODE_SYNC_EN	 0x80  // Mask for this bit
+#define STEP_MODE_SYNC_EN  0x80  // Mask for this bit
 #define SYNC_EN 0x80
 
 // ...last, define the SYNC_SEL modes. The clock output is defined by
@@ -180,68 +178,68 @@
 
 // Register address redefines.
 //  See the Param_Handler() function for more info about these.
-#define L6470_ABS_POS        	0x01
-#define L6470_EL_POS         	0x02
-#define L6470_MARK           	0x03
-#define L6470_SPEED          	0x04
-#define L6470_ACC            	0x05
-#define L6470_DEC            	0x06
-#define L6470_MAX_SPEED      	0x07
-#define L6470_MIN_SPEED      	0x08
-#define L6470_FS_SPD         	0x15
-#define L6470_KVAL_HOLD      	0x09
-#define L6470_KVAL_RUN       	0x0A
-#define L6470_KVAL_ACC       	0x0B
-#define L6470_KVAL_DEC       	0x0C
-#define L6470_INT_SPD        	0x0D
-#define L6470_ST_SLP         	0x0E
-#define L6470_FN_SLP_ACC     	0x0F
-#define L6470_FN_SLP_DEC     	0x10
-#define L6470_K_THERM        	0x11
-#define L6470_ADC_OUT        	0x12
-#define L6470_OCD_TH         	0x13
-#define L6470_STALL_TH       	0x14
-#define L6470_STEP_MODE      	0x16
-#define L6470_ALARM_EN       	0x17
-#define L6470_CONFIG         	0x18
-#define L6470_STATUS         	0x19
+#define L6470_ABS_POS         0x01
+#define L6470_EL_POS          0x02
+#define L6470_MARK            0x03
+#define L6470_SPEED           0x04
+#define L6470_ACC             0x05
+#define L6470_DEC             0x06
+#define L6470_MAX_SPEED       0x07
+#define L6470_MIN_SPEED       0x08
+#define L6470_FS_SPD          0x15
+#define L6470_KVAL_HOLD       0x09
+#define L6470_KVAL_RUN        0x0A
+#define L6470_KVAL_ACC        0x0B
+#define L6470_KVAL_DEC        0x0C
+#define L6470_INT_SPD         0x0D
+#define L6470_ST_SLP          0x0E
+#define L6470_FN_SLP_ACC      0x0F
+#define L6470_FN_SLP_DEC      0x10
+#define L6470_K_THERM         0x11
+#define L6470_ADC_OUT         0x12
+#define L6470_OCD_TH          0x13
+#define L6470_STALL_TH        0x14
+#define L6470_STEP_MODE       0x16
+#define L6470_ALARM_EN        0x17
+#define L6470_CONFIG          0x18
+#define L6470_STATUS          0x19
 
 // dSPIN commands
-#define dSPIN_NOP            	0x00
-#define dSPIN_SET_PARAM      	0x00
-#define dSPIN_GET_PARAM      	0x20
-#define dSPIN_RUN            	0x50
-#define dSPIN_STEP_CLOCK     	0x58
-#define dSPIN_MOVE           	0x40
-#define dSPIN_GOTO           	0x60
-#define dSPIN_GOTO_DIR       	0x68
-#define dSPIN_GO_UNTIL       	0x82
-#define dSPIN_RELEASE_SW     	0x92
-#define dSPIN_GO_HOME        	0x70
-#define dSPIN_GO_MARK        	0x78
-#define dSPIN_RESET_POS      	0xD8
-#define dSPIN_RESET_DEVICE   	0xC0
-#define dSPIN_SOFT_STOP      	0xB0
-#define dSPIN_HARD_STOP      	0xB8
-#define dSPIN_SOFT_HIZ       	0xA0
-#define dSPIN_HARD_HIZ       	0xA8
-#define dSPIN_GET_STATUS     	0xD0
+#define dSPIN_NOP             0x00
+#define dSPIN_SET_PARAM       0x00
+#define dSPIN_GET_PARAM       0x20
+#define dSPIN_RUN             0x50
+#define dSPIN_STEP_CLOCK      0x58
+#define dSPIN_MOVE            0x40
+#define dSPIN_GOTO            0x60
+#define dSPIN_GOTO_DIR        0x68
+#define dSPIN_GO_UNTIL        0x82
+#define dSPIN_RELEASE_SW      0x92
+#define dSPIN_GO_HOME         0x70
+#define dSPIN_GO_MARK         0x78
+#define dSPIN_RESET_POS       0xD8
+#define dSPIN_RESET_DEVICE    0xC0
+#define dSPIN_SOFT_STOP       0xB0
+#define dSPIN_HARD_STOP       0xB8
+#define dSPIN_SOFT_HIZ        0xA0
+#define dSPIN_HARD_HIZ        0xA8
+#define dSPIN_GET_STATUS      0xD0
 
 // dSPIN direction options
-#define dSPIN_FWD  					 	0x01
-#define dSPIN_REV  					 	0x00
+#define dSPIN_FWD             0x01
+#define dSPIN_REV             0x00
 
 // dSPIN action options
-#define dSPIN_ACTION_RESET   	0x00
-#define dSPIN_ACTION_COPY    	0x01
+#define dSPIN_ACTION_RESET    0x00
+#define dSPIN_ACTION_COPY     0x01
 
 class L6470 {
 
   public:
 
-  L6470(const int SSPin);
+  L6470(const int SSPin);  // TODO: Configurable SPI pins
 
-	void init();
+  void init();
 
   void setMicroSteps(int microSteps);
   void setCurrent(const int current); // NOT IMPLEMENTED
@@ -253,56 +251,56 @@ class L6470 {
   void setThresholdSpeed(const float threshold);
   void setStallCurrent(float ma_current);
 
-	unsigned long ParamHandler(const byte param, const unsigned long value);
-	void SetLowSpeedOpt(boolean enable);
+  unsigned long ParamHandler(const byte param, const unsigned long value);
+  void SetLowSpeedOpt(boolean enable);
 
-	void run(const byte dir, const float spd);
-	void Step_Clock(const byte dir);
+  void run(const byte dir, const float spd);
+  void Step_Clock(const byte dir);
 
-	void goHome();
-	void setAsHome();
+  void goHome();
+  void setAsHome();
 
-	void goMark();
-	void move(const long n_step);
-	void goTo(long pos);
-	void goTo_DIR(const byte dir, long pos);
-	void goUntil(const byte act, const byte dir, unsigned long spd);
+  void goMark();
+  void move(const long n_step);
+  void goTo(long pos);
+  void goTo_DIR(const byte dir, long pos);
+  void goUntil(const byte act, const byte dir, unsigned long spd);
 
-	boolean isBusy();
+  boolean isBusy();
 
-	void releaseSW(const byte act, const byte dir);
+  void releaseSW(const byte act, const byte dir);
 
-	float getSpeed();
-	long getPos();
-	void setMark();
-	void setMark(long value);
+  float getSpeed();
+  long getPos();
+  void setMark();
+  void setMark(long value);
 
-	void resetPos();
-	void resetDev();
-	void softStop();
-	void hardStop();
-	void softFree();
-	void free();
-	int getStatus();
+  void resetPos();
+  void resetDev();
+  void softStop();
+  void hardStop();
+  void softFree();
+  void free();
+  int getStatus();
 
   private:
 
-	long convert(unsigned long val);
+  long convert(unsigned long val);
 
-	void SetParam(const byte param, const unsigned long value);
-	unsigned long GetParam(const byte param);
+  void SetParam(const byte param, const unsigned long value);
+  unsigned long GetParam(const byte param);
 
-	unsigned long AccCalc(const float stepsPerSecPerSec);
-	unsigned long DecCalc(const float stepsPerSecPerSec);
-	unsigned long MaxSpdCalc(const float stepsPerSec);
-	unsigned long MinSpdCalc(const float stepsPerSec);
-	unsigned long FSCalc(const float stepsPerSec);
-	unsigned long IntSpdCalc(const float stepsPerSec);
-	unsigned long SpdCalc(const float stepsPerSec);
-	unsigned long Param(unsigned long value, const byte bit_len);
-	byte Xfer(byte data);
+  unsigned long AccCalc(const float stepsPerSecPerSec);
+  unsigned long DecCalc(const float stepsPerSecPerSec);
+  unsigned long MaxSpdCalc(const float stepsPerSec);
+  unsigned long MinSpdCalc(const float stepsPerSec);
+  unsigned long FSCalc(const float stepsPerSec);
+  unsigned long IntSpdCalc(const float stepsPerSec);
+  unsigned long SpdCalc(const float stepsPerSec);
+  unsigned long Param(unsigned long value, const byte bit_len);
+  byte Xfer(byte data);
 
-	int _SSPin;
+  int _SSPin;
 };
 
 #endif // _L6470_H_

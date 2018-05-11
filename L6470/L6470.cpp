@@ -19,14 +19,10 @@ L6470::L6470(const int SSPin) {
 
 // Generic init function to set up communication with the dSPIN chip.
 void L6470::init() {
-  // set up the input/output pins for the application.
-  pinMode(10, OUTPUT);  // The SPI peripheral REQUIRES the hardware SS pin-
-                        //  pin 10- to be an output. This is in here just
-                        //  in case some future user makes something other
-                        //  than pin 10 the SS pin.
 
   pinMode(_SSPin, OUTPUT);
   digitalWrite(_SSPin, HIGH);
+
   pinMode(MOSI, OUTPUT);
   pinMode(MISO, INPUT);
   pinMode(SCK, OUTPUT);
@@ -53,7 +49,7 @@ void L6470::init() {
 
   // First things first: let's check communications. The L6470_CONFIG register should
   //  power up to 0x2E88, so we can use that to check the communications.
-  Serial.println(GetParam(L6470_CONFIG) == 0x2E88 ? "good to go" : "Comm issue");
+  //Serial.println(GetParam(L6470_CONFIG) == 0x2E88 ? "good to go" : "Comm issue");
 
   // First, let's set the step mode register:
   //   - SYNC_EN controls whether the BUSY/SYNC pin reflects the step
@@ -112,7 +108,7 @@ void L6470::setThresholdSpeed(const float thresholdSpeed) {
   SetParam(L6470_FS_SPD, thresholdSpeed ? FSCalc(thresholdSpeed) : 0x3FF);
 }
 
-void L6470::setCurrent(const int current) { }
+void L6470::setCurrent(const int current) { (void)(current); }
 
 // Configure the L6470_MAX_SPEED register- this is the maximum number of (micro)steps per
 //  second allowed. You'll want to mess around with your desired application to see
@@ -313,7 +309,7 @@ void L6470::free() { Xfer(dSPIN_HARD_HIZ); }
 //  to read L6470_STATUS does not clear these values.
 int L6470::getStatus() {
   Xfer(dSPIN_GET_STATUS);
-  return = Xfer(0) << 8 | Xfer(0);
+  return Xfer(0) << 8 | Xfer(0);
 }
 
 // The value in the L6470_ACC register is [(steps/s/s)*(tick^2)]/(2^-40) where tick is
@@ -322,14 +318,14 @@ int L6470::getStatus() {
 // This is a 12-bit value, so we need to make sure the value is at or below 0xFFF.
 unsigned long L6470::AccCalc(const float stepsPerSecPerSec) {
   unsigned long temp = (unsigned long)(stepsPerSecPerSec * 0.137438);
-  return temp < 0x00000FFF : temp : 0x00000FFF;
+  return temp < 0x00000FFF ? temp : 0x00000FFF;
 }
 
 unsigned long L6470::DecCalc(float stepsPerSecPerSec) {
   // The calculation for L6470_DEC is the same as for L6470_ACC. Value is 0x08A on boot.
   // This is a 12-bit value, so we need to make sure the value is at or below 0xFFF.
   unsigned long temp = (unsigned long)(stepsPerSecPerSec * 0.137438);
-  return temp < 0x00000FFF : temp : 0x00000FFF;
+  return temp < 0x00000FFF ? temp : 0x00000FFF;
 }
 
 unsigned long L6470::MaxSpdCalc(const float stepsPerSec) {
@@ -338,7 +334,7 @@ unsigned long L6470::MaxSpdCalc(const float stepsPerSec) {
   // Multiply desired steps/s by .065536 to get an appropriate value for this register
   // This is a 10-bit value, so we need to make sure it remains at or below 0x3FF
   unsigned long temp = (unsigned long)(stepsPerSec * .065536);
-  return temp < 0x000003FF : temp : 0x000003FF;
+  return temp < 0x000003FF ? temp : 0x000003FF;
 }
 
 unsigned long L6470::MinSpdCalc(const float stepsPerSec) {
@@ -347,7 +343,7 @@ unsigned long L6470::MinSpdCalc(const float stepsPerSec) {
   // Multiply desired steps/s by 4.1943 to get an appropriate value for this register
   // This is a 12-bit value, so we need to make sure the value is at or below 0xFFF.
   unsigned long temp = (unsigned long)(stepsPerSec * 4.1943);
-  return temp < 0x00000FFF : temp : 0x00000FFF;
+  return temp < 0x00000FFF ? temp : 0x00000FFF;
 }
 
 unsigned long L6470::FSCalc(const float stepsPerSec) {
@@ -356,7 +352,7 @@ unsigned long L6470::FSCalc(const float stepsPerSec) {
   // Multiply desired steps/s by .065536 and subtract .5 to get an appropriate value for this register
   // This is a 10-bit value, so we need to make sure the value is at or below 0x3FF.
   unsigned long temp = (unsigned long)(stepsPerSec * .065536 - .5);
-  return temp < 0x000003FF : temp : 0x000003FF;
+  return temp < 0x000003FF ? temp : 0x000003FF;
 }
 
 unsigned long L6470::IntSpdCalc(const float stepsPerSec) {
@@ -365,7 +361,7 @@ unsigned long L6470::IntSpdCalc(const float stepsPerSec) {
   // Multiply desired steps/s by 4.1943 to get an appropriate value for this register
   // This is a 14-bit value, so we need to make sure the value is at or below 0x3FFF.
   unsigned long temp = (unsigned long)(stepsPerSec * 4.1943);
-  return temp < 0x00003FFF : temp : 0x00003FFF;
+  return temp < 0x00003FFF ? temp : 0x00003FFF;
 }
 
 unsigned long L6470::SpdCalc(const float stepsPerSec) {
@@ -374,7 +370,7 @@ unsigned long L6470::SpdCalc(const float stepsPerSec) {
   // Multiply desired steps/s by 67.106 to get an appropriate value for this register
   // This is a 20-bit value, so we need to make sure the value is at or below 0xFFFFF.
   unsigned long temp = (unsigned long)(stepsPerSec * 67.106);
-  return temp < 0x000FFFFF : temp : 0x000FFFFF;
+  return temp < 0x000FFFFF ? temp : 0x000FFFFF;
 }
 
 unsigned long L6470::Param(unsigned long value, const byte bit_len) {
@@ -393,9 +389,9 @@ unsigned long L6470::Param(unsigned long value, const byte bit_len) {
   //  store it until return time.
   unsigned long ret_val;
   switch (byte_len) {
-    case 3: ret_val |= long(Xfer((byte)(value >> 16))) << 16; break;
-    case 2: ret_val |= long(Xfer((byte)(value >> 8))) << 8; break;
-    case 1: ret_val |= Xfer((byte)value); break;
+    case 3: ret_val = long(Xfer((byte)(value >> 16))) << 16; break;
+    case 2: ret_val = long(Xfer((byte)(value >> 8))) << 8; break;
+    case 1: ret_val = Xfer((byte)value); break;
     default: ret_val = 0; break;
   }
   //Serial.println(ret_val, HEX);
