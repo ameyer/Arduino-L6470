@@ -8,8 +8,9 @@
 //                                                                //
 ////////////////////////////////////////////////////////////////////
 
+#include "L6470.h"
+
 #include <Arduino.h>
-#include <L6470.h>
 #include <SPI.h>
 
 L6470::L6470(const int SSPin) {
