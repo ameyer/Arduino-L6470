@@ -2,22 +2,24 @@
 //ORIGINAL CODE 12/12/2011- Mike Hord, SparkFun Electronics
 //LIBRARY Created by Adam Meyer of bildr Aug 18th 2012
 //Released as MIT license
+// Chain and individual SPI code added 1/6/2019
 ////////////////////////////////////////////////////////////
 
 #ifndef _L6470_H_
 #define _L6470_H_
 
 #include <Arduino.h>
-#include <SPI.h>
 
-#define L6470_LIBRARY_VERSION 0x000602
+#define L6470_LIBRARY_VERSION 0x000700
+
+extern byte L6470_chain[21]; // 0 - number of drivers in chain, 1... axis index for first device in the chain (closest to MOSI)
 
 //#define SCK    10  // Wire this to the CSN pin
 //#define MOSI   11  // Wire this to the SDI pin
 //#define MISO   12  // Wire this to the SDO pin
 //#define SS_PIN 16  // Wire this to the CK pin
-#define RESET   6  // Wire this to the STBY line
-#define BUSYN   4  // Wire this to the BSYN line
+#define PIN_RESET   6  // Wire this to the STBY line
+#define PIN_BUSYN   4  // Wire this to the BSYN line
 
 #define STAT1    14  // Hooked to an LED on the test jig
 #define STAT2    15  // Hooked to an LED on the test jig
@@ -206,6 +208,7 @@
 #define L6470_CONFIG          0x18
 #define L6470_STATUS          0x19
 
+
 // dSPIN commands
 #define dSPIN_NOP             0x00
 #define dSPIN_SET_PARAM       0x00
@@ -239,7 +242,7 @@ class L6470 {
 
   public:
 
-  L6470(const int SSPin);  // TODO: Configurable SPI pins
+  L6470(const int SS_Pin);
 
   void init();
 
@@ -285,12 +288,19 @@ class L6470 {
   void free();
   int getStatus();
 
+  void SetParam(const byte param, const unsigned long value);
+  unsigned long GetParam(const byte param);
+
+  void set_chain_info(const byte axis_index, const byte position);
+
+  void set_pins(const int SCK, const int MOSI, const int MISO, const int RESET, const int BUSYN);
+
+
   private:
 
   long convert(unsigned long val);
 
-  void SetParam(const byte param, const unsigned long value);
-  unsigned long GetParam(const byte param);
+
 
   unsigned long AccCalc(const float stepsPerSecPerSec);
   unsigned long DecCalc(const float stepsPerSecPerSec);
@@ -301,8 +311,19 @@ class L6470 {
   unsigned long SpdCalc(const float stepsPerSec);
   unsigned long Param(unsigned long value, const byte bit_len);
   byte Xfer(byte data);
+  byte Xfer(byte data, int SS_Pin, byte position);
 
-  int _SSPin;
+  int SS_Pin = 0xfffF;
+  int SCK_Pin = 0xfffF;
+  int MOSI_Pin = 0xfffF;
+  int MISO_Pin = 0xfffF;
+  int RESET_Pin = 0xfffF;
+  int BUSYN_Pin = 0xfffF;
+
+  byte axis_index;
+  byte position = 0;  // 0 - not part of a chain
+
+
 };
 
 #endif // _L6470_H_
