@@ -388,12 +388,12 @@ unsigned long L6470::Param(unsigned long value, const byte bit_len) {
   //  over SPI- when calling it, we typecast a shifted version of the masked
   //  value, then we shift the received value back by the same amount and
   //  store it until return time.
-  unsigned long ret_val;
+  unsigned long ret_val = 0;
   switch (byte_len) {
-    case 3: ret_val = long(Xfer((byte)(value >> 16))) << 16; break;
-    case 2: ret_val = long(Xfer((byte)(value >> 8))) << 8; break;
-    case 1: ret_val = Xfer((byte)value); break;
-    default: ret_val = 0; break;
+    case 3: ret_val |= long(Xfer((byte)(value >> 16))) << 16;
+    case 2: ret_val |= long(Xfer((byte)(value >> 8))) << 8;
+    case 1: ret_val |= Xfer((byte)value);
+    default: break;
   }
   //Serial.println(ret_val, HEX);
 
