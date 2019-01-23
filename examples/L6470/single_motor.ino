@@ -9,7 +9,7 @@
 
 L6470 stepper(SS_PIN);              // create stepper object
 
-void setup(){
+void setup() {
   stepper.set_pins(SCK_PIN, MOSI_PIN, MISO_PIN, RESET_PIN, BUSYN_PIN);  //use library's soft SPI
   stepper.init();
   stepper.setAcc(100);              // Set acceleration
@@ -27,7 +27,7 @@ void setup(){
   stepper.goTo(200);
 }
 
-void loop(){
+void loop() {
   while (stepper.isBusy()) delay(10);
   stepper.goTo(-200);
   while (stepper.isBusy()) delay(10);

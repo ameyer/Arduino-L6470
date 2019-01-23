@@ -20,7 +20,7 @@
 L6470 stepperA(A_SS_PIN);
 L6470 stepperB(B_SS_PIN);
 
-void setup(){
+void setup() {
 
   stepperA.set_pins(A_SCK_PIN, A_MOSI_PIN, A_MISO_PIN, A_RESET_PIN, A_BUSYN_PIN);  //use library's soft SPI
   stepperA.init();
@@ -50,7 +50,7 @@ void setup(){
   stepperB.goTo(200);        //  stepperB's start is delayed by SPI transmission time
 }
 
-void loop(){
+void loop() {
   while (stepperB.isBusy()) delay(10);
   stepperA.goTo(-200);
   stepperB.goTo(-200);
