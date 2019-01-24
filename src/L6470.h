@@ -1,23 +1,27 @@
-////////////////////////////////////////////////////////////
-//ORIGINAL CODE 12/12/2011- Mike Hord, SparkFun Electronics
-//LIBRARY Created by Adam Meyer of bildr Aug 18th 2012
-//Released as MIT license
-////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+//                                                                //
+// ORIGINAL CODE 12 Dec 2011 Mike Hord, SparkFun Electronics      //
+//                                                                //
+// LIBRARY Created by Adam Meyer (@ameyer) of bildr 18 Aug 2012   //
+//   Modified by Scott Lahteine (@thinkyhead) 6 Mar 2018          //
+//   Chain and SPI updates by Bob Kuhn (@bob-the-kuhn) 6 Jan 2019 //
+//   Released as MIT license                                      //
+//                                                                //
+////////////////////////////////////////////////////////////////////
 
 #ifndef _L6470_H_
 #define _L6470_H_
 
 #include <Arduino.h>
-#include <SPI.h>
 
-#define L6470_LIBRARY_VERSION 0x000602
+#define L6470_LIBRARY_VERSION 0x000700
 
 //#define SCK    10  // Wire this to the CSN pin
 //#define MOSI   11  // Wire this to the SDI pin
 //#define MISO   12  // Wire this to the SDO pin
 //#define SS_PIN 16  // Wire this to the CK pin
-#define RESET   6  // Wire this to the STBY line
-#define BUSYN   4  // Wire this to the BSYN line
+#define PIN_RESET   6  // Wire this to the STBY line
+#define PIN_BUSYN   4  // Wire this to the BSYN line
 
 #define STAT1    14  // Hooked to an LED on the test jig
 #define STAT2    15  // Hooked to an LED on the test jig
@@ -236,28 +240,30 @@
 #define dSPIN_ACTION_COPY     0x01
 
 class L6470 {
+public:
 
-  public:
+  static uint8_t chain[21]; // 0 - number of drivers in chain, 1... axis index for first device in the chain (closest to MOSI)
 
-  L6470(const int SSPin);  // TODO: Configurable SPI pins
+  L6470(const int16_t pin_SS);
 
   void init();
+  void spi_init();
 
-  void setMicroSteps(int microSteps);
-  void setCurrent(const int current); // NOT IMPLEMENTED
-  void setMaxSpeed(const int speed);
-  void setMinSpeed(const int speed);
+  void setMicroSteps(int16_t microSteps);
+  void setCurrent(const int16_t current); // NOT IMPLEMENTED
+  void setMaxSpeed(const int16_t speed);
+  void setMinSpeed(const int16_t speed);
   void setAcc(const float acceleration);
   void setDec(const float deceleration);
-  void setOverCurrent(unsigned int ma_current);
+  void setOverCurrent(uint16_t ma_current);
   void setThresholdSpeed(const float threshold);
   void setStallCurrent(float ma_current);
 
-  unsigned long ParamHandler(const byte param, const unsigned long value);
+  uint32_t ParamHandler(const uint8_t param, const uint32_t value);
   void SetLowSpeedOpt(boolean enable);
 
-  void run(const byte dir, const float spd);
-  void Step_Clock(const byte dir);
+  void run(const uint8_t dir, const float spd);
+  void Step_Clock(const uint8_t dir);
 
   void goHome();
   void setAsHome();
@@ -265,12 +271,12 @@ class L6470 {
   void goMark();
   void move(const long n_step);
   void goTo(long pos);
-  void goTo_DIR(const byte dir, long pos);
-  void goUntil(const byte act, const byte dir, unsigned long spd);
+  void goTo_DIR(const uint8_t dir, long pos);
+  void goUntil(const uint8_t act, const uint8_t dir, uint32_t spd);
 
   boolean isBusy();
 
-  void releaseSW(const byte act, const byte dir);
+  void releaseSW(const uint8_t act, const uint8_t dir);
 
   float getSpeed();
   long getPos();
@@ -283,26 +289,39 @@ class L6470 {
   void hardStop();
   void softFree();
   void free();
-  int getStatus();
+  int16_t getStatus();
 
-  private:
+  void SetParam(const uint8_t param, const uint32_t value);
+  uint32_t GetParam(const uint8_t param);
 
-  long convert(unsigned long val);
+  void set_chain_info(const uint8_t axis_index, const uint8_t position);
 
-  void SetParam(const byte param, const unsigned long value);
-  unsigned long GetParam(const byte param);
+  void set_pins(const int16_t SCK, const int16_t MOSI, const int16_t MISO, const int16_t RESET, const int16_t BUSYN);
 
-  unsigned long AccCalc(const float stepsPerSecPerSec);
-  unsigned long DecCalc(const float stepsPerSecPerSec);
-  unsigned long MaxSpdCalc(const float stepsPerSec);
-  unsigned long MinSpdCalc(const float stepsPerSec);
-  unsigned long FSCalc(const float stepsPerSec);
-  unsigned long IntSpdCalc(const float stepsPerSec);
-  unsigned long SpdCalc(const float stepsPerSec);
-  unsigned long Param(unsigned long value, const byte bit_len);
-  byte Xfer(byte data);
+private:
 
-  int _SSPin;
+  long convert(uint32_t val);
+
+  uint32_t AccCalc(const float stepsPerSecPerSec);
+  uint32_t DecCalc(const float stepsPerSecPerSec);
+  uint32_t MaxSpdCalc(const float stepsPerSec);
+  uint32_t MinSpdCalc(const float stepsPerSec);
+  uint32_t FSCalc(const float stepsPerSec);
+  uint32_t IntSpdCalc(const float stepsPerSec);
+  uint32_t SpdCalc(const float stepsPerSec);
+  uint32_t Param(uint32_t value, const uint8_t bit_len);
+  uint8_t Xfer(uint8_t data);
+  uint8_t Xfer(uint8_t data, int16_t ss_pin, uint8_t position);
+
+  int16_t pin_SS    = -1,
+          pin_SCK   = -1,
+          pin_MOSI  = -1,
+          pin_MISO  = -1,
+          pin_RESET = -1,
+          pin_BUSYN = -1;
+
+  uint8_t axis_index;
+  uint8_t position = 0;  // 0 - not part of a chain
 };
 
 #endif // _L6470_H_
