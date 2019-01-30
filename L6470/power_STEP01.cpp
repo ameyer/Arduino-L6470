@@ -13,7 +13,7 @@
 
 #include <Arduino.h>
 
-uint8_t L64XX_chain[21];
+uint8_t powerSTEP01_chain[21];
    // [0] - number of drivers in chain
    // [1]... axis index for first device in the chain (closest to MOSI)
 

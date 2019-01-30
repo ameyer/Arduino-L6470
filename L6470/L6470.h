@@ -30,8 +30,10 @@
 
 #ifdef L647X
   #define L64XX L6470
+  #define L64XX_chain L6470_chain
 #elif defined(POWER_STEP)
   #define L64XX powerSTEP01
+  #define L64XX_chain powerSTEP01_chain
 #endif
 
 
