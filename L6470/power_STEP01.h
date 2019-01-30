@@ -18,15 +18,15 @@
 
 
 
-#ifndef _L6470_H_
-#define _L6470_H_
+#ifndef _POWER_STEP01_H_
+#define _POWER_STEP01_H_
 
 #include <Arduino.h>
 
 #define L6470_LIBRARY_VERSION 0x000700
 
-#define L647X         // enable this if using the L647x family
-//#define POWER_STEP  // enable this if using the powerSTEP01 or L648x family rather than the L647x
+//#define L647X         // enable this if using the L647x family
+#define POWER_STEP      // enable this if using the powerSTEP01 or L648x family rather than the L647x
 
 #ifdef L647X
   #define L64XX L6470
@@ -409,4 +409,4 @@ private:
   uint8_t axis_index;
   uint8_t position = 0;  // 0 - not part of a chain
 };
-#endif // _L6470_H_
+#endif // _POWER_STEP01_H_
