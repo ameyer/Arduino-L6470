@@ -9,11 +9,11 @@
 //                                                                //
 ////////////////////////////////////////////////////////////////////
 
-#include "L6470.h"
+#include "power_STEP01.h"
 
 #include <Arduino.h>
 
-uint8_t L6470_chain[21];
+uint8_t powerSTEP01_chain[21];
    // [0] - number of drivers in chain
    // [1]... axis index for first device in the chain (closest to MOSI)
 
@@ -55,7 +55,7 @@ void L64XX::init() {
     digitalWrite(pin_SS, HIGH);
   }
 
-  // initialize SPI for the dSPIN chip's needs:
+  // Initialize SPI for the dSPIN chip's needs:
   //  most significant bit first,
   //  SPI clock not to exceed 5MHz,
   //  SPI_MODE3 (clock idle high, latch data on rising edge of clock)
@@ -218,13 +218,13 @@ float L64XX::getSpeed() {
 
 // Configure the overcurrent detection threshold.
 void L64XX::setOverCurrent(float ma_current) {
-  if (ma_current > OCD_CURRENT_CONSTANT_INV * (OCD_TH_MAX + 1)) ma_current = OCD_CURRENT_CONSTANT_INV * (OCD_TH_MAX + 1);  // keep the OCD_TH calc from overflowing 8 bits
+  if (ma_current > OCD_CURRENT_CONSTANT_INV * (OCD_TH_MAX +1)) ma_current = OCD_CURRENT_CONSTANT_INV * (OCD_TH_MAX +1);  // keep the OCD_TH calc from overflowing 8 bits
   const uint8_t OCValue = (uint8_t)floor(uint8_t(ma_current * OCD_CURRENT_CONSTANT - 1));
   SetParam(L6470_OCD_TH, OCValue < OCD_TH_MAX ? OCValue : OCD_TH_MAX);
 }
 
 void L64XX::setStallCurrent(float ma_current) {
-  if (ma_current > STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX + 1)) ma_current = STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX + 1);  // keep the STALL_TH calc from overflowing 8 bits
+  if (ma_current > STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX +1)) ma_current = STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX +1);  // keep the STALL_TH calc from overflowing 8 bits
   const uint8_t STHValue = (uint8_t)floor(uint8_t(ma_current * STALL_CURRENT_CONSTANT - 1));
   SetParam(L6470_STALL_TH, STHValue < STALL_TH_MAX ? STHValue : STALL_TH_MAX);
 }
