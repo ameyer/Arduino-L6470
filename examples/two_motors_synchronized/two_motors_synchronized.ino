@@ -129,7 +129,7 @@ void goTo(long location_1, long location_2) {
 
   Buffer_Transfer(buffer_command, L6470::chain[0]);  // send the commands
   Buffer_Transfer(addr21_16     , L6470::chain[0]);  // send the MSB of the position
-  Buffer_Transfer(addr15_8      , L6470::chain[0]);    
+  Buffer_Transfer(addr15_8      , L6470::chain[0]);
   Buffer_Transfer(addr7_0       , L6470::chain[0]);  // this one results in the motors moving
 }
 
