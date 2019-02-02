@@ -13,7 +13,7 @@
 
 #include <Arduino.h>
 
-uint8_t L6470_chain[21];
+uint8_t L6470::chain[21];
    // [0] - number of drivers in chain
    // [1]... axis index for first device in the chain (closest to MOSI)
 
@@ -107,13 +107,13 @@ void L64XX::init() {
 // add to the chain array and save chain info for this stepper
 void L64XX::set_chain_info(const uint8_t axis, const uint8_t chain_position) {
   if (chain_position) {
-    L64XX_chain[0]++;
-    L64XX_chain[chain_position] = axis;
+    chain[0]++;
+    chain[chain_position] = axis;
     position = chain_position;
     axis_index = axis;
   }
   else
-    L64XX_chain[0] = 0;  //reset array back to uninitialized
+    chain[0] = 0;  //reset array back to uninitialized
 }
 
 // Set optional pins for this stepper
@@ -500,8 +500,8 @@ uint8_t L64XX::Xfer(uint8_t data) {
     uint8_t out_data = 0;
     uint8_t return_data = 0;
     digitalWrite(pin_SS, LOW);
-    for (uint8_t i = L64XX_chain[0]; i >= 1; i--) {
-      out_data = (L64XX_chain[i] == position ? data : CMD_NOP);
+    for (uint8_t i = chain[0]; i >= 1; i--) {
+      out_data = (chain[i] == position ? data : CMD_NOP);
       uint8_t bits = 8;
       do {
         digitalWrite(pin_SCK, LOW);
@@ -512,7 +512,7 @@ uint8_t L64XX::Xfer(uint8_t data) {
         out_data |= (digitalRead(pin_MISO) != 0);
       } while (--bits);
       delay(0);  // 10 cycles @ 84mhz
-      if (L64XX_chain[i] == position) return_data = out_data;
+      if (chain[i] == position) return_data = out_data;
     }
     digitalWrite(pin_SS, HIGH);
     return return_data;

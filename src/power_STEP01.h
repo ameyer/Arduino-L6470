@@ -28,10 +28,8 @@
 
 #ifdef L647X
   #define L64XX L6470
-  #define L64XX_chain L6470_chain
 #elif defined(POWER_STEP)
   #define L64XX powerSTEP01
-  #define L64XX_chain powerSTEP01_chain
 #endif
 
 //#define SCK    10  // Wire this to the CSN pin
@@ -319,10 +317,10 @@
   #define STALL_CURRENT_CONSTANT_INV  200                                     //  mA per count  (empirically derived for powerSTEP01)
 #endif
 
-extern uint8_t L64XX_chain[21]; // 0 - number of drivers in chain, 1... axis index for first device in the chain (closest to MOSI)
-
 class L64XX {
 public:
+
+  static uint8_t chain[21]; // 0 - number of drivers in chain, 1... axis index for first device in the chain (closest to MOSI)
 
   L64XX(const int16_t pin_SS);
 
