@@ -16,26 +16,21 @@
  * Page numbers are for the L6470 data sheet.
  */
 
-
-
 #ifndef _L6470_H_
 #define _L6470_H_
 
 #include <Arduino.h>
 
-#define L6470_LIBRARY_VERSION 0x000700
+#define L6470_LIBRARY_VERSION 0x000701
 
 #define L647X         // enable this if using the L647x family
 //#define POWER_STEP  // enable this if using the powerSTEP01 or L648x family rather than the L647x
 
 #ifdef L647X
   #define L64XX L6470
-  #define L64XX_chain L6470_chain
 #elif defined(POWER_STEP)
   #define L64XX powerSTEP01
-  #define L64XX_chain powerSTEP01_chain
 #endif
-
 
 //#define SCK    10  // Wire this to the CSN pin
 //#define MOSI   11  // Wire this to the SDI pin
@@ -136,8 +131,8 @@
 #define CONFIG_SW_MODE                 0x0010 // Mask for this bit.
 #define CONFIG_SW_HARD_STOP            0x0000 // Default; hard stop motor on switch.
 #define CONFIG_SW_USER                 0x0010 // Tie to the GoUntil and ReleaseSW
-                                                    //  commands to provide jog function.
-                                                    //  See page 25 of datasheet.
+                                              //  commands to provide jog function.
+                                              //  See page 25 of datasheet.
 
 // Configure the motor voltage compensation mode (see page 34 of datasheet)
 #define CONFIG_EN_VSCOMP               0x0020  // Mask for this bit.
@@ -195,32 +190,32 @@
 #define STATUS_BUSY                    0x0002 // mirrors BUSY pin
 #define STATUS_SW_F                    0x0004 // low when switch open, high when closed
 #define STATUS_SW_EVN                  0x0008 // active high, set on switch falling edge,
-                                                    //  cleared by reading L6470_STATUS
+                                              //  cleared by reading L6470_STATUS
 #define STATUS_DIR                     0x0010 // Indicates current motor direction.
-                                                    //  High is dSPIN_FWD, Low is dSPIN_REV.
+                                              //  High is dSPIN_FWD, Low is dSPIN_REV.
 
 #ifdef L647X
-  #define STATUS_NOTPERF_CMD             0x0080 // Last command not performed.
-  #define STATUS_WRONG_CMD               0x0100 // Last command not valid.
-  #define STATUS_UVLO                    0x0200 // Undervoltage lockout is active
-  #define STATUS_TH_WRN                  0x0400 // Thermal warning
-  #define STATUS_TH_SD                   0x0800 // Thermal shutdown
-  #define STATUS_OCD                     0x1000 // Overcurrent detected
-  #define STATUS_STEP_LOSS_A             0x2000 // Stall detected on A bridge
-  #define STATUS_STEP_LOSS_B             0x4000 // Stall detected on B bridge
-  #define STATUS_SCK_MOD                 0x8000 // Step clock mode is active
+  #define STATUS_NOTPERF_CMD           0x0080 // Last command not performed.
+  #define STATUS_WRONG_CMD             0x0100 // Last command not valid.
+  #define STATUS_UVLO                  0x0200 // Undervoltage lockout is active
+  #define STATUS_TH_WRN                0x0400 // Thermal warning
+  #define STATUS_TH_SD                 0x0800 // Thermal shutdown
+  #define STATUS_OCD                   0x1000 // Overcurrent detected
+  #define STATUS_STEP_LOSS_A           0x2000 // Stall detected on A bridge
+  #define STATUS_STEP_LOSS_B           0x4000 // Stall detected on B bridge
+  #define STATUS_SCK_MOD               0x8000 // Step clock mode is active
 #else
-  #define STATUS_NOTPERF_CMD             0x0080 // Last command not performed.
-  #define STATUS_WRONG_CMD               0x0080 // Last command not valid.
-  #define STATUS_CMD_ERR                 0x0080 // Command error
-  #define STATUS_UVLO                    0x0200 // Undervoltage lockout is active
-  #define UVLO_ADC                       0x0400 // ADC undervoltage event
-  #define STATUS_TH_WRN                  0x0800 // Thermal warning
-  #define STATUS_TH_SD                   0x1000 // Thermal shutdown
-  #define STATUS_OCD                     0x2000 // Overcurrent detected
-  #define STATUS_STEP_LOSS_A             0x4000 // Stall detected on A bridge
-  #define STATUS_STEP_LOSS_B             0x8000 // Stall detected on B bridge
-  #define STATUS_SCK_MOD                 0x0100 // Step clock mode is active
+  #define STATUS_NOTPERF_CMD           0x0080 // Last command not performed.
+  #define STATUS_WRONG_CMD             0x0080 // Last command not valid.
+  #define STATUS_CMD_ERR               0x0080 // Command error
+  #define STATUS_UVLO                  0x0200 // Undervoltage lockout is active
+  #define UVLO_ADC                     0x0400 // ADC undervoltage event
+  #define STATUS_TH_WRN                0x0800 // Thermal warning
+  #define STATUS_TH_SD                 0x1000 // Thermal shutdown
+  #define STATUS_OCD                   0x2000 // Overcurrent detected
+  #define STATUS_STEP_LOSS_A           0x4000 // Stall detected on A bridge
+  #define STATUS_STEP_LOSS_B           0x8000 // Stall detected on B bridge
+  #define STATUS_SCK_MOD               0x0100 // Step clock mode is active
 #endif
 
 // Status register motor status field
@@ -259,10 +254,10 @@
   #define L6470_CONFIG        0x18
   #define L6470_STATUS        0x19
 #else
-  #define L6470_GATECFG1        0x18
-  #define L6470_GATECFG2        0x19
-  #define L6470_CONFIG          0x1A
-  #define L6470_STATUS          0x1B
+  #define L6470_GATECFG1      0x18
+  #define L6470_GATECFG2      0x19
+  #define L6470_CONFIG        0x1A
+  #define L6470_STATUS        0x1B
 #endif
 #define PWR_TVAL_HOLD         0X09  // powerSTEP01 current mode register names
 #define PWR_TVAL_RUN          0X0A
@@ -271,7 +266,6 @@
 #define PWR_T_FAST            0X0E
 #define PWR_TON_MIN           0X0F
 #define PWR_TOFF_MIN          0X10
-
 
 // dSPIN commands
 #define dSPIN_NOP             0x00
@@ -312,11 +306,12 @@
 #elif defined(POWER_STEP)
   #define OCD_TH_MAX 31
   #define STALL_TH_MAX 31
-//  #define POWERSTEP_AVERAGE_RDS 0.016                                       //  Ohms - L648x use external FETs so this may be user modified
-//  #define OCD_CURRENT_CONSTANT  (POWERSTEP_AVERAGE_RDS/0.03125)/1000        //  counts per mA (calc per data sheet - definitely wrong)
-//  #define OCD_CURRENT_CONSTANT_INV (1000 * 0.03125)/(POWERSTEP_AVERAGE_RDS) //  mA per count  (calc per data sheet - definitely wrong)
-//  #define STALL_CURRENT_CONSTANT  OCD_CURRENT_CONSTANT                      //  counts per mA (calc per data sheet - definitely wrong)
-//  #define STALL_CURRENT_CONSTANT_INV OCD_CURRENT_CONSTANT_INV               //  mA per count  (calc per data sheet - definitely wrong)
+  //#define POWERSTEP_AVERAGE_RDS 0.016                                       //  Ohms - L648x use external FETs so this may be user modified
+  //#define OCD_CURRENT_CONSTANT  (POWERSTEP_AVERAGE_RDS/0.03125)/1000        //  counts per mA (calc per data sheet - definitely wrong)
+  //#define OCD_CURRENT_CONSTANT_INV (1000 * 0.03125)/(POWERSTEP_AVERAGE_RDS) //  mA per count  (calc per data sheet - definitely wrong)
+  //#define STALL_CURRENT_CONSTANT  OCD_CURRENT_CONSTANT                      //  counts per mA (calc per data sheet - definitely wrong)
+  //#define STALL_CURRENT_CONSTANT_INV OCD_CURRENT_CONSTANT_INV               //  mA per count  (calc per data sheet - definitely wrong)
+
   #define OCD_CURRENT_CONSTANT        0.001                                   //  counts per mA (empirically derived for powerSTEP01)
   #define OCD_CURRENT_CONSTANT_INV    1000                                    //  mA per count  (empirically derived for powerSTEP01)
   #define STALL_CURRENT_CONSTANT      0.005                                   //  counts per mA (empirically derived for powerSTEP01)
@@ -328,8 +323,6 @@ extern uint8_t L64XX_chain[21]; // 0 - number of drivers in chain, 1... axis ind
 
 class L64XX {
 public:
-
-
 
   L64XX(const int16_t pin_SS);
 
@@ -378,7 +371,6 @@ public:
   void free();
   int16_t getStatus();
 
-
   void SetParam(const uint8_t param, const uint32_t value);
   uint32_t GetParam(const uint8_t param);
 
@@ -387,6 +379,7 @@ public:
   void set_pins(const int16_t SCK, const int16_t MOSI, const int16_t MISO, const int16_t RESET, const int16_t BUSYN);
 
 private:
+
 
   long convert(uint32_t val);
 

@@ -13,7 +13,8 @@
 
 #include <Arduino.h>
 
-uint8_t L6470_chain[21];
+uint8_t L6470::chain[21];
+
    // [0] - number of drivers in chain
    // [1]... axis index for first device in the chain (closest to MOSI)
 
@@ -25,7 +26,7 @@ uint8_t L6470_chain[21];
 #elif defined(__ICCARM__)               // IAR Ewarm 5.41+
   #define WEAK __weak
 #elif defined(__GNUC__)                 // GCC CS3 2009q3-68
-#define WEAK __attribute__ ((weak))
+  #define WEAK __attribute__ ((weak))
 #else
   #define WEAK
 #endif
@@ -86,6 +87,7 @@ void L64XX::init() {
   //  16MHz internal oscillator, nothing on output
   SetParam(L6470_CONFIG, CONFIG_PWM_DIV_1 | CONFIG_PWM_MUL_2 | CONFIG_SR_290V_us| CONFIG_OC_SD_DISABLE | CONFIG_VS_COMP_DISABLE | CONFIG_SW_HARD_STOP | CONFIG_INT_16MHZ);
 
+
  // Configure the dSPIN_RUN KVAL. This defines the duty cycle of the PWM of the bridges
   //  during running. 0xFF means that they are essentially NOT PWMed during run; this
   //  MAY result in more power being dissipated than you actually need for the task.
@@ -95,6 +97,7 @@ void L64XX::init() {
   SetParam(L6470_KVAL_RUN, 0xFF);
   SetParam(L6470_KVAL_ACC, 0xFF);
   SetParam(L6470_KVAL_DEC, 0xFF);
+
 
 // Calling GetStatus() clears the UVLO bit in the status register, which is set by
   //  default on power-up. The driver may not run without that bit cleared by this
@@ -117,6 +120,7 @@ void L64XX::set_chain_info(const uint8_t axis, const uint8_t chain_position) {
 }
 
 // Sets optional pins for this stepper
+
 // pin_SS is set by the instantiation call.
 void L64XX::set_pins(const int16_t sck, const int16_t mosi, const int16_t miso, const int16_t reset, const int16_t busyn) {
   pin_SCK    = sck;
@@ -218,13 +222,13 @@ float L64XX::getSpeed() {
 
 // Configure the overcurrent detection threshold.
 void L64XX::setOverCurrent(float ma_current) {
-  if (ma_current > OCD_CURRENT_CONSTANT_INV * (OCD_TH_MAX +1)) ma_current = OCD_CURRENT_CONSTANT_INV * (OCD_TH_MAX +1);  // keep the OCD_TH calc from overflowing 8 bits
+  if (ma_current > OCD_CURRENT_CONSTANT_INV * (OCD_TH_MAX + 1)) ma_current = OCD_CURRENT_CONSTANT_INV * (OCD_TH_MAX + 1);  // keep the OCD_TH calc from overflowing 8 bits
   const uint8_t OCValue = (uint8_t)floor(uint8_t(ma_current * OCD_CURRENT_CONSTANT - 1));
   SetParam(L6470_OCD_TH, OCValue < OCD_TH_MAX ? OCValue : OCD_TH_MAX);
 }
 
 void L64XX::setStallCurrent(float ma_current) {
-  if (ma_current > STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX +1)) ma_current = STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX +1);  // keep the STALL_TH calc from overflowing 8 bits
+  if (ma_current > STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX + 1)) ma_current = STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX + 1);  // keep the STALL_TH calc from overflowing 8 bits
   const uint8_t STHValue = (uint8_t)floor(uint8_t(ma_current * STALL_CURRENT_CONSTANT - 1));
   SetParam(L6470_STALL_TH, STHValue < STALL_TH_MAX ? STHValue : STALL_TH_MAX);
 }
@@ -630,9 +634,7 @@ uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
     //  This is less useful than it sounds; see the datasheet for more information.
     case L6470_ADC_OUT:    return Xfer(0);
 
-
-
-      // Set the overcurrent threshold. Ranges from 375mA to 6A in steps of 375mA.
+    // Set the overcurrent threshold. Ranges from 375mA to 6A in steps of 375mA.
     //  A set of defined constants is provided for the user's convenience. Default
     //  value is 3.375A- 0x08. This is a 4-bit value.
     #ifndef POWER_STEP
@@ -644,8 +646,6 @@ uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
       case L6470_OCD_TH:     return Xfer(uint8_t(value) & 0x1F);
       case L6470_STALL_TH:   return Xfer(uint8_t(value) & 0x1F);
     #endif
-
-
 
     // L6470_STEP_MODE controls the microstepping settings, as well as the generation of an
     //  output signal from the dSPIN. Bits 2:0 control the number of microsteps per
@@ -662,13 +662,10 @@ uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
     //  FLAG pin.
     case L6470_ALARM_EN:   return Xfer(uint8_t(value));
 
-
     #ifdef POWER_STEP
       case L6470_GATECFG1:   return Param(uint16_t(value & 0x07ff), 11);
       case L6470_GATECFG2:   return Xfer(uint8_t(value));
     #endif
-
-
 
     // L6470_CONFIG contains some assorted configuration bits and fields. A fairly comprehensive
     //  set of reasonably self-explanatory constants is provided, but users should refer
