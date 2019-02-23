@@ -11,36 +11,25 @@
 
 #include "L6470.h"
 
+#if L6470_LIBRARY_VERSION == 0x000800    //must use with 0x000800
+
 #include <Arduino.h>
 
-uint8_t L6470_chain[21];
-   // [0] - number of drivers in chain
-   // [1]... axis index for first device in the chain (closest to MOSI)
+uint8_t L64XX_chain[21]; // 0 - number of drivers in chain, 1... axis index for first device in the chain (closest to MOSI)
 
-// placeholders to prevent compiler errors if using internal SPI functions
+L64XX::L64XX() {}
 
-// Define WEAK attribute
-#ifdef __CC_ARM                         // Keil µVision 4
-  #define WEAK __attribute__ ((weak))
-#elif defined(__ICCARM__)               // IAR Ewarm 5.41+
-  #define WEAK __weak
-#elif defined(__GNUC__)                 // GCC CS3 2009q3-68
-#define WEAK __attribute__ ((weak))
-#else
-  #define WEAK
-#endif
+L6470::L6470(const int16_t ss_pin) {
+  pin_SS = ss_pin;
+  // Serial.begin(9600);
+}
 
-void L6470_SPI_init() WEAK ;
-void L6470_SPI_init() {} // called whenever a stepper object is created
-uint8_t L6470_transfer(uint8_t data, int16_t ss_pin) WEAK ;
-uint8_t L6470_transfer(uint8_t data, int16_t ss_pin) { return 0; }
-uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t axis) WEAK ;
-uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t axis) { return 0; }
-  // "data" is the data to be sent to the target device
-  // "ss_pin" is the slave select pin to be used for this transfer
-  // "axis" is the index of the axis the data is meant for.  Only used in SPI daisy chain systems
+L6480::L6480(const int16_t ss_pin) {
+  pin_SS = ss_pin;
+  // Serial.begin(9600);
+}
 
-L64XX::L64XX(const int16_t ss_pin) {
+powerSTEP01::powerSTEP01(const int16_t ss_pin) {
   pin_SS = ss_pin;
   // Serial.begin(9600);
 }
@@ -554,6 +543,13 @@ uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
   //  bits and do the right number of transfers. That is handled by the dSPIN_Param()
   //  function, in most cases, but for 1-uint8_t or smaller transfers, we call
   //  Xfer() directly.
+
+  // These defines help handle the register address differences between L6470, L6480 & powerSTEP01
+  #define L6470_CONFIG_A  0x18  // L6470: L6470_CONFIG, L6480 & powerSTEP01: L6470_GATECFG1
+  #define L6470_STATUS_A  0x19  // L6470: L6470_STATUS, L6480 & powerSTEP01: L6470_GATECFG2
+  #define L6470_CONFIG_B  0x1A  // L6480 & powerSTEP01: L6470_CONFIG
+  #define L6470_STATUS_B  0x1B  // L6480 & powerSTEP01: L6470_STATUS
+
   switch (param) {
     // L6470_ABS_POS is the current absolute offset from home. It is a 22 bit number expressed
     //  in two's complement. At power up, this value is 0. It cannot be written when
@@ -630,22 +626,13 @@ uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
     //  This is less useful than it sounds; see the datasheet for more information.
     case L6470_ADC_OUT:    return Xfer(0);
 
-
-
-      // Set the overcurrent threshold. Ranges from 375mA to 6A in steps of 375mA.
+    // Set the overcurrent threshold. Ranges from 375mA to 6A in steps of 375mA.
     //  A set of defined constants is provided for the user's convenience. Default
     //  value is 3.375A- 0x08. This is a 4-bit value.
-    #ifndef POWER_STEP
-      case L6470_OCD_TH:     return Xfer(uint8_t(value) & 0x0F);
-      // Stall current threshold. Defaults to 0x40, or 2.03A. Value is from 31.25mA to
-      //  4A in 31.25mA steps. This is a 7-bit value.
-      case L6470_STALL_TH:   return Xfer(uint8_t(value) & 0x7F);
-    #else
-      case L6470_OCD_TH:     return Xfer(uint8_t(value) & 0x1F);
-      case L6470_STALL_TH:   return Xfer(uint8_t(value) & 0x1F);
-    #endif
-
-
+    case L6470_OCD_TH:     return Xfer(uint8_t(value) & OCD_TH_MAX);
+    // Stall current threshold. Defaults to 0x40, or 2.03A. Value is from 31.25mA to
+    //  4A in 31.25mA steps. This is a 7-bit value.
+    case L6470_STALL_TH:   return Xfer(uint8_t(value) & STALL_TH_MAX);
 
     // L6470_STEP_MODE controls the microstepping settings, as well as the generation of an
     //  output signal from the dSPIN. Bits 2:0 control the number of microsteps per
@@ -662,28 +649,29 @@ uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
     //  FLAG pin.
     case L6470_ALARM_EN:   return Xfer(uint8_t(value));
 
-
-    #ifdef POWER_STEP
-      case L6470_GATECFG1:   return Param(uint16_t(value & 0x07ff), 11);
-      case L6470_GATECFG2:   return Xfer(uint8_t(value));
-    #endif
-
-
+    // GATECFG1 & GATECFG2 - L6480 and powerSTEP01 only, these registers control the slew rate and off time of the
+    // bridge power FETs.
 
     // L6470_CONFIG contains some assorted configuration bits and fields. A fairly comprehensive
     //  set of reasonably self-explanatory constants is provided, but users should refer
     //  to the datasheet before modifying the contents of this register to be certain they
     //  understand the implications of their modifications. Value on boot is 0x2E88; this
     //  can be a useful way to verify proper start up and operation of the dSPIN chip.
-    case L6470_CONFIG:     return Param(value, 16);
+    case L6470_CONFIG_A:     if (L6470_status_layout) return Param(value, 16);  // L6470 CONFIG register
+                             else return Param(uint16_t(value & 0x07ff), 11);   // L6480 & powerSTEP01 GATECFG1 register
+    case L6470_CONFIG_B:     if (L6470_status_layout) return Param(value, 16);  // L6480 & powerSTEP01 CONFIG register
+
 
     // L6470_STATUS contains read-only information about the current condition of the chip. A
     //  comprehensive set of constants for masking and testing this register is provided, but
     //  users should refer to the datasheet to ensure that they fully understand each one of
     //  the bits in the register.
-    case L6470_STATUS:     return Param(0, 16);  // L6470_STATUS is a read-only register
-
+    case L6470_STATUS_A:     if (L6470_status_layout) return Param(value, 16);  // L46470 STATUS register
+                             else return Xfer(uint8_t(value));                  // L6480 & powerSTEP01 GATECFG2 register
+    case L6470_STATUS_B:     return Param(0, 16);                               // L6480 & powerSTEP01 STATUS register
 
   }
   return Xfer(uint8_t(value));
 }
+
+#endif // library version 0x000800
