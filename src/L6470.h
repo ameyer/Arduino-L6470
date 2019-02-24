@@ -283,7 +283,6 @@ public:
   void spi_init();
 
   void setMicroSteps(int16_t microSteps);
-  void setCurrent(const int16_t current); // NOT IMPLEMENTED
   void setMaxSpeed(const int16_t speed);
   void setMinSpeed(const int16_t speed);
   void setAcc(const float acceleration);

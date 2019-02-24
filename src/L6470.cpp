@@ -164,8 +164,6 @@ void L64XX::setThresholdSpeed(const float thresholdSpeed) {
   SetParam(L6470_FS_SPD, thresholdSpeed ? FSCalc(thresholdSpeed) : 0x3FF);
 }
 
-void L64XX::setCurrent(const int16_t current) { (void)(current); }
-
 // Configure the L6470_MAX_SPEED register- this is the maximum number of (micro)steps per
 //  second allowed. You'll want to mess around with your desired application to see
 //  how far you can push it before the motor starts to slip. The ACTUAL parameter
