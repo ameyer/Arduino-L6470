@@ -15,7 +15,9 @@
 
 #include <Arduino.h>
 
-uint8_t L64XX_chain[21]; // 0 - number of drivers in chain, 1... axis index for first device in the chain (closest to MOSI)
+uint8_t L64XX_chain[21];
+   // [0] - number of drivers in chain
+   // [1]... axis index for first device in the chain (closest to MOSI)
 
 L64XX::L64XX() {}
 
@@ -68,12 +70,12 @@ void L64XX::init() {
   // Set up the L6470_CONFIG register as follows:
   //  PWM frequency divisor = 1
   //  PWM frequency multiplier = 2 (62.5kHz PWM frequency)
-  //  Slew rate is 290V/us
+  //  Slew rate is 110V/us
   //  Do NOT shut down bridges on overcurrent
   //  Disable motor voltage compensation
   //  Hard stop on switch low
   //  16MHz internal oscillator, nothing on output
-  SetParam(L6470_CONFIG, CONFIG_PWM_DIV_1 | CONFIG_PWM_MUL_2 | CONFIG_SR_290V_us| CONFIG_OC_SD_DISABLE | CONFIG_VS_COMP_DISABLE | CONFIG_SW_HARD_STOP | CONFIG_INT_16MHZ);
+  SetParam(L6470_CONFIG, CONFIG_PWM_DIV_1 | CONFIG_PWM_MUL_2 | CONFIG_SR_110V_us | CONFIG_OC_SD_DISABLE | CONFIG_VS_COMP_DISABLE | CONFIG_SW_HARD_STOP | CONFIG_INT_16MHZ);
 
  // Configure the dSPIN_RUN KVAL. This defines the duty cycle of the PWM of the bridges
   //  during running. 0xFF means that they are essentially NOT PWMed during run; this

@@ -143,11 +143,14 @@ uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t axis);  // user sup
 // Configure the slew rate of the power bridge output
 // L6470
 #define CONFIG_POW_SR                  0x0300  // Mask for this bit field.
-#define CONFIG_SR_180V_us              0x0000  // 180V/us
-#define CONFIG_SR_290V_us              0x0200  // 290V/us
-#define CONFIG_SR_530V_us              0x0300  // 530V/us
+#define CONFIG_POW_SR_BIT              8       // starting bit of this field
+#define CONFIG_SR_320V_us              0x0000  // 320V/us
+#define CONFIG_SR_75V_us               0x0100  // 75V/us
+#define CONFIG_SR_110V_us              0x0200  // 110V/us
+#define CONFIG_SR_260V_us              0x0300  // 260V/us
 
 // L6480 & powerSTEP01
+#define CONFIG1_SR                     0x00FF  // Mask for this bit field.
 #define CONFIG1_SR_220V_us             0x006C
 #define CONFIG1_SR_400V_us             0x0087
 #define CONFIG1_SR_520V_us             0x00A6
@@ -157,6 +160,10 @@ uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t axis);  // user sup
 #define CONFIG2_SR_520V_us             0x10
 #define CONFIG2_SR_980V_us             0x30
 
+
+// L6480 & powerSTEP01 VCC setting
+#define PWR_VCC_7_5V                   0
+#define PWR_VCC_15V                    0x0100
 
 // Integer divisors for PWM sinewave generation
 //  See page 32 of the datasheet for more information on this.
