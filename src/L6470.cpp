@@ -11,8 +11,6 @@
 
 #include "L6470.h"
 
-#if L6470_LIBRARY_VERSION == 0x000800    //must use with 0x000800
-
 #include <Arduino.h>
 
 uint8_t L64XX_chain[21];
@@ -673,5 +671,3 @@ uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
   }
   return Xfer(uint8_t(value));
 }
-
-#endif // library version 0x000800
