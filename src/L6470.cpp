@@ -13,43 +13,31 @@
 
 #include <Arduino.h>
 
-uint8_t L6470::chain[21];
+uint8_t L64XX_chain[21];
    // [0] - number of drivers in chain
    // [1]... axis index for first device in the chain (closest to MOSI)
 
-// placeholders to prevent compiler errors if using internal SPI functions
-
-// Define WEAK attribute
-#ifdef __CC_ARM                         // Keil µVision 4
-  #define WEAK __attribute__ ((weak))
-#elif defined(__ICCARM__)               // IAR Ewarm 5.41+
-  #define WEAK __weak
-#elif defined(__GNUC__)                 // GCC CS3 2009q3-68
-  #define WEAK __attribute__ ((weak))
-#else
-  #define WEAK
-#endif
-
-void L6470_SPI_init() WEAK ;
-void L6470_SPI_init() {} // called whenever a stepper object is created
-uint8_t L6470_transfer(uint8_t data, int16_t ss_pin) WEAK ;
-uint8_t L6470_transfer(uint8_t data, int16_t ss_pin) { return 0; }
-uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t axis) WEAK ;
-uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t axis) { return 0; }
-  // "data" is the data to be sent to the target device
-  // "ss_pin" is the slave select pin to be used for this transfer
-  // "axis" is the index of the axis the data is meant for.  Only used in SPI daisy chain systems
+L64XX::L64XX() {}
 
 L6470::L6470(const int16_t ss_pin) {
   pin_SS = ss_pin;
   // Serial.begin(9600);
-  chain[0] = 0;  // init chain array
+}
+
+L6480::L6480(const int16_t ss_pin) {
+  pin_SS = ss_pin;
+  // Serial.begin(9600);
+}
+
+powerSTEP01::powerSTEP01(const int16_t ss_pin) {
+  pin_SS = ss_pin;
+  // Serial.begin(9600);
 }
 
 // Generic init function to set up communication with the dSPIN chip.
 
-// call this after setting up the SPI(s) (after all "L6470::set_pins" and "set_chain_info" commands)
-void L6470::init() {
+// call this after setting up the SPI(s) (after all "L64XX::set_pins" and "set_chain_info" commands)
+void L64XX::init() {
 
   if (pin_SS >= 0) {   //init pin_SS if it has been set for this chip
     pinMode(pin_SS, OUTPUT);
@@ -80,12 +68,12 @@ void L6470::init() {
   // Set up the L6470_CONFIG register as follows:
   //  PWM frequency divisor = 1
   //  PWM frequency multiplier = 2 (62.5kHz PWM frequency)
-  //  Slew rate is 290V/us
+  //  Slew rate is 110V/us
   //  Do NOT shut down bridges on overcurrent
   //  Disable motor voltage compensation
   //  Hard stop on switch low
   //  16MHz internal oscillator, nothing on output
-  SetParam(L6470_CONFIG, CONFIG_PWM_DIV_1 | CONFIG_PWM_MUL_2 | CONFIG_SR_290V_us| CONFIG_OC_SD_DISABLE | CONFIG_VS_COMP_DISABLE | CONFIG_SW_HARD_STOP | CONFIG_INT_16MHZ);
+  SetParam(L6470_CONFIG, CONFIG_PWM_DIV_1 | CONFIG_PWM_MUL_2 | CONFIG_SR_110V_us | CONFIG_OC_SD_DISABLE | CONFIG_VS_COMP_DISABLE | CONFIG_SW_HARD_STOP | CONFIG_INT_16MHZ);
 
  // Configure the dSPIN_RUN KVAL. This defines the duty cycle of the PWM of the bridges
   //  during running. 0xFF means that they are essentially NOT PWMed during run; this
@@ -106,20 +94,20 @@ void L6470::init() {
 }
 
 // add to the chain array and save chain info for this stepper
-void L6470::set_chain_info(const uint8_t axis, const uint8_t chain_position) {
+void L64XX::set_chain_info(const uint8_t axis, const uint8_t chain_position) {
   if (chain_position) {
-    chain[0]++;
-    chain[chain_position] = axis;
+    L64XX_chain[0]++;
+    L64XX_chain[chain_position] = axis;
     position = chain_position;
     axis_index = axis;
   }
   else
-    chain[0] = 0;  //reset array back to uninitialized
+    L64XX_chain[0] = 0;  //reset array back to uninitialized
 }
 
 // Sets optional pins for this stepper
 // pin_SS is set by the instantiation call.
-void L6470::set_pins(const int16_t sck, const int16_t mosi, const int16_t miso, const int16_t reset, const int16_t busyn) {
+void L64XX::set_pins(const int16_t sck, const int16_t mosi, const int16_t miso, const int16_t reset, const int16_t busyn) {
   pin_SCK    = sck;
   pin_MOSI   = mosi;
   pin_MISO   = miso;
@@ -137,12 +125,12 @@ void L6470::set_pins(const int16_t sck, const int16_t mosi, const int16_t miso, 
     pinMode(pin_BUSYN, INPUT);
 
   // reset the dSPIN chip. This could also be accomplished by
-  //  calling the "L6470::ResetDev()" function after SPI is initialized.
+  //  calling the "L64XX::ResetDev()" function after SPI is initialized.
   //
   //  Reset should be done here ONLY if each chip has a dedicated reset pin.  Otherwise
   //  the already initialized chip(s) will be set back to power up values.
 
-  // This need to be done BEFORE calling L6470::init() or the data written by the init
+  // This need to be done BEFORE calling L64XX::init() or the data written by the init
   // will be ceared to power up values.
   if (pin_RESET >= 0) {
     pinMode(pin_RESET, OUTPUT);
@@ -155,9 +143,9 @@ void L6470::set_pins(const int16_t sck, const int16_t mosi, const int16_t miso, 
   }
 }
 
-boolean L6470::isBusy() { return !(getStatus() & 0x0002); }
+boolean L64XX::isBusy() { return !(getStatus() & 0x0002); }
 
-void L6470::setMicroSteps(int16_t microSteps) {
+void L64XX::setMicroSteps(int16_t microSteps) {
   uint8_t stepVal;
   for (stepVal = 0; stepVal < 8; stepVal++) {
     if (microSteps == 1) break;
@@ -170,11 +158,17 @@ void L6470::setMicroSteps(int16_t microSteps) {
 //  microstepping and goes to full stepping. FSCalc() converts a value in steps/s
 //  to a value suitable for this register; to disable full-step switching, you
 //  can pass 0x3FF to this register.
-void L6470::setThresholdSpeed(const float thresholdSpeed) {
+void L64XX::setThresholdSpeed(const float thresholdSpeed) {
   SetParam(L6470_FS_SPD, thresholdSpeed ? FSCalc(thresholdSpeed) : 0x3FF);
 }
 
-void L6470::setCurrent(const int16_t current) { (void)(current); }
+// Configure the L6470_MAX_SPEED register- this is the maximum number of (micro)steps per
+//  second allowed. You'll want to mess around with your desired application to see
+//  how far you can push it before the motor starts to slip. The ACTUAL parameter
+//  passed to this function is in steps/tick; MaxSpdCalc() will convert a number of
+//  steps/s into an appropriate value for this function. Note that for any move or
+//  goto type function where no speed is specified, this value will be used.
+void L64XX::setMaxSpeed(const int16_t speed) { SetParam(L6470_MAX_SPEED, MaxSpdCalc(speed)); }
 
 // Configure the L6470_MAX_SPEED register- this is the maximum number of (micro)steps per
 //  second allowed. You'll want to mess around with your desired application to see
@@ -182,15 +176,7 @@ void L6470::setCurrent(const int16_t current) { (void)(current); }
 //  passed to this function is in steps/tick; MaxSpdCalc() will convert a number of
 //  steps/s into an appropriate value for this function. Note that for any move or
 //  goto type function where no speed is specified, this value will be used.
-void L6470::setMaxSpeed(const int16_t speed) { SetParam(L6470_MAX_SPEED, MaxSpdCalc(speed)); }
-
-// Configure the L6470_MAX_SPEED register- this is the maximum number of (micro)steps per
-//  second allowed. You'll want to mess around with your desired application to see
-//  how far you can push it before the motor starts to slip. The ACTUAL parameter
-//  passed to this function is in steps/tick; MaxSpdCalc() will convert a number of
-//  steps/s into an appropriate value for this function. Note that for any move or
-//  goto type function where no speed is specified, this value will be used.
-void L6470::setMinSpeed(const int16_t speed) { SetParam(L6470_MIN_SPEED, MinSpdCalc(speed)); }
+void L64XX::setMinSpeed(const int16_t speed) { SetParam(L6470_MIN_SPEED, MinSpdCalc(speed)); }
 
 // Configure the acceleration rate, in steps/tick/tick. There is also a L6470_DEC register;
 //  both of them have a function (AccCalc() and DecCalc() respectively) that convert
@@ -198,11 +184,11 @@ void L6470::setMinSpeed(const int16_t speed) { SetParam(L6470_MIN_SPEED, MinSpdC
 //  sets the acceleration and deceleration to 'infinite' (or as near as the driver can
 //  manage). If L6470_ACC is set to 0xFFF, L6470_DEC is ignored. To get infinite deceleration
 //  without infinite acceleration, only hard stop will work.
-void L6470::setAcc(const float acceleration) { SetParam(L6470_ACC, AccCalc(acceleration)); }
+void L64XX::setAcc(const float acceleration) { SetParam(L6470_ACC, AccCalc(acceleration)); }
 
-void L6470::setDec(const float deceleration) { SetParam(L6470_DEC, DecCalc(deceleration)); }
+void L64XX::setDec(const float deceleration) { SetParam(L6470_DEC, DecCalc(deceleration)); }
 
-long L6470::getPos() { return convert(GetParam(L6470_ABS_POS)); }
+long L64XX::getPos() { return convert(GetParam(L6470_ABS_POS)); }
 
 // L6470_SPEED
 //  The L6470_SPEED register contains the current motor speed, expressed in step/tick (format unsigned fixed point 0.28).
@@ -211,21 +197,23 @@ long L6470::getPos() { return convert(GetParam(L6470_ABS_POS)); }
 //  where L6470_SPEED is the integer number stored into the register and tick is 250 ns.
 //  The available range is from 0 to 15625 step/s with a resolution of 0.015 step/s.
 //  Note: The range effectively available to the user is limited by the L6470_MAX_SPEED parameter.
-float L6470::getSpeed() {
+float L64XX::getSpeed() {
   return (float)GetParam(L6470_SPEED);
   //return (float) speed * pow(8, -22);
   //return FSCalc(speed); NEEDS FIX
 }
 
 // Configure the overcurrent detection threshold.
-void L6470::setOverCurrent(const uint16_t ma_current) {
-  const uint8_t OCValue = (uint8_t)floor(ma_current / 375 - 1);
-  SetParam(L6470_OCD_TH, OCValue < 0x0F ? OCValue : 0x0F);
+void L64XX::setOverCurrent(float ma_current) {
+  if (ma_current > OCD_CURRENT_CONSTANT_INV * (OCD_TH_MAX +1)) ma_current = OCD_CURRENT_CONSTANT_INV * (OCD_TH_MAX +1);  // keep the OCD_TH calc from overflowing 8 bits
+  const uint8_t OCValue = (uint8_t)floor(uint8_t(ma_current * OCD_CURRENT_CONSTANT - 1));
+  SetParam(L6470_OCD_TH, OCValue < OCD_TH_MAX ? OCValue : OCD_TH_MAX);
 }
 
-void L6470::setStallCurrent(const float ma_current) {
-  const uint8_t STHValue = (uint8_t)floor(ma_current / 31.25 - 1);
-  SetParam(L6470_STALL_TH, STHValue < 0x80 ? STHValue : 0x7F);
+void L64XX::setStallCurrent(float ma_current) {
+  if (ma_current > STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX +1)) ma_current = STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX +1);  // keep the STALL_TH calc from overflowing 8 bits
+  const uint8_t STHValue = (uint8_t)floor(uint8_t(ma_current * STALL_CURRENT_CONSTANT - 1));
+  SetParam(L6470_STALL_TH, STHValue < STALL_TH_MAX ? STHValue : STALL_TH_MAX);
 }
 
 // Enable or disable the low-speed optimization option. If enabling,
@@ -233,7 +221,7 @@ void L6470::setStallCurrent(const float ma_current) {
 //  When disabling, the value will have to be explicitly written by
 //  the user with a SetParam() call. See the datasheet for further
 //  information about low-speed optimization.
-void L6470::SetLowSpeedOpt(const boolean enable) {
+void L64XX::SetLowSpeedOpt(const boolean enable) {
   Xfer(dSPIN_SET_PARAM | L6470_MIN_SPEED);
   Param(enable ? 0x1000 : 0, 13);
 }
@@ -244,7 +232,7 @@ void L6470::SetLowSpeedOpt(const boolean enable) {
 //  will switch the device into full-step mode.
 // The SpdCalc() function is provided to convert steps/s values into
 //  appropriate integer values for this function.
-void L6470::run(const uint8_t dir, const float spd) {
+void L64XX::run(const uint8_t dir, const float spd) {
   uint32_t speedVal = SpdCalc(spd);
   Xfer(dSPIN_RUN | dir);
   if (speedVal > 0xFFFFF) speedVal = 0xFFFFF;
@@ -258,7 +246,7 @@ void L6470::run(const uint8_t dir, const float spd) {
 //  the direction (set by the dSPIN_FWD and dSPIN_REV constants) imposed by the call
 //  of this function. Motion commands (dSPIN_RUN, dSPIN_MOVE, etc) will cause the device
 //  to exit step clocking mode.
-void L6470::Step_Clock(const uint8_t dir) {
+void L64XX::Step_Clock(const uint8_t dir) {
   Xfer(dSPIN_STEP_CLOCK | dir);
 }
 
@@ -266,7 +254,7 @@ void L6470::Step_Clock(const uint8_t dir) {
 //  direction imposed by dir (dSPIN_FWD or dSPIN_REV constants may be used). The motor
 //  will accelerate according the acceleration and deceleration curves, and
 //  will run at L6470_MAX_SPEED. Stepping mode will adhere to L6470_FS_SPD value, as well.
-void L6470::move(const long n_step) {
+void L64XX::move(const long n_step) {
   const uint8_t dir = n_step >= 0 ? dSPIN_FWD : dSPIN_REV;
   Xfer(dSPIN_MOVE | dir);         // Set direction
   long n_stepABS = abs(n_step);
@@ -279,7 +267,7 @@ void L6470::move(const long n_step) {
 // dSPIN_GOTO operates much like dSPIN_MOVE, except it produces absolute motion instead
 //  of relative motion. The motor will be moved to the indicated position
 //  in the shortest possible fashion.
-void L6470::goTo(long pos) {
+void L64XX::goTo(long pos) {
   Xfer(dSPIN_GOTO);
   if (pos > 0x3FFFFF) pos = 0x3FFFFF;
   Xfer(uint8_t(pos >> 16));
@@ -288,7 +276,7 @@ void L6470::goTo(long pos) {
 }
 
 // Same as dSPIN_GOTO, but with user constrained rotational direction.
-void L6470::goTo_DIR(const uint8_t dir, long pos) {
+void L64XX::goTo_DIR(const uint8_t dir, long pos) {
   Xfer(dSPIN_GOTO_DIR | dir);
   if (pos > 0x3FFFFF) pos = 0x3FFFFF;
   Xfer(uint8_t(pos >> 16));
@@ -302,7 +290,7 @@ void L6470::goTo_DIR(const uint8_t dir, long pos) {
 //  performed at the falling edge, and depending on the value of
 //  act (either RESET or COPY) the value in the L6470_ABS_POS register is
 //  either RESET to 0 or COPY-ed into the L6470_MARK register.
-void L6470::goUntil(const uint8_t act, const uint8_t dir, uint32_t spd) {
+void L64XX::goUntil(const uint8_t act, const uint8_t dir, uint32_t spd) {
   Xfer(dSPIN_GO_UNTIL | act | dir);
   if (spd > 0x3FFFFF) spd = 0x3FFFFF;
   Xfer(uint8_t(spd >> 16));
@@ -317,21 +305,21 @@ void L6470::goUntil(const uint8_t act, const uint8_t dir, uint32_t spd) {
 //  and the L6470_ABS_POS register is either COPY-ed into L6470_MARK or RESET to
 //  0, depending on whether RESET or COPY was passed to the function
 //  for act.
-void L6470::releaseSW(const uint8_t act, const uint8_t dir) {
+void L64XX::releaseSW(const uint8_t act, const uint8_t dir) {
   Xfer(dSPIN_RELEASE_SW | act | dir);
 }
 
 // GoHome is equivalent to GoTo(0), but requires less time to send.
 //  Note that no direction is provided; motion occurs through shortest
 //  path. If a direction is required, use GoTo_DIR().
-void L6470::goHome() { Xfer(dSPIN_GO_HOME); }
+void L64XX::goHome() { Xfer(dSPIN_GO_HOME); }
 
 // GoMark is equivalent to GoTo(L6470_MARK), but requires less time to send.
 //  Note that no direction is provided; motion occurs through shortest
 //  path. If a direction is required, use GoTo_DIR().
-void L6470::goMark() { Xfer(dSPIN_GO_MARK); }
+void L64XX::goMark() { Xfer(dSPIN_GO_MARK); }
 
-void L6470::setMark(long value) {
+void L64XX::setMark(long value) {
   Xfer(L6470_MARK);
   if (value > 0x3FFFFF) value = 0x3FFFFF;
   if (value < -0x3FFFFF) value = -0x3FFFFF;
@@ -340,7 +328,7 @@ void L6470::setMark(long value) {
   Xfer(uint8_t(value));
 }
 
-void L6470::setMark() {
+void L64XX::setMark() {
   long value = getPos();
   Xfer(L6470_MARK);
   if (value > 0x3FFFFF) value = 0x3FFFFF;
@@ -352,28 +340,28 @@ void L6470::setMark() {
 
 // Sets the L6470_ABS_POS register to 0, effectively declaring the current
 //  position to be "HOME".
-void L6470::setAsHome() { Xfer(dSPIN_RESET_POS); }
+void L64XX::setAsHome() { Xfer(dSPIN_RESET_POS); }
 
 // Reset device to power up conditions. Equivalent to toggling the STBY
 //  pin or cycling power.
-void L6470::resetDev() { Xfer(dSPIN_RESET_DEVICE); }
+void L64XX::resetDev() { Xfer(dSPIN_RESET_DEVICE); }
 
 // Bring the motor to a halt using the deceleration curve.
-void L6470::softStop() { Xfer(dSPIN_SOFT_STOP); }
+void L64XX::softStop() { Xfer(dSPIN_SOFT_STOP); }
 
 // Stop the motor right away. No deceleration.
-void L6470::hardStop() { Xfer(dSPIN_HARD_STOP); }
+void L64XX::hardStop() { Xfer(dSPIN_HARD_STOP); }
 
 // Decelerate the motor and disengage
-void L6470::softFree() { Xfer(dSPIN_SOFT_HIZ); }
+void L64XX::softFree() { Xfer(dSPIN_SOFT_HIZ); }
 
 // Disengage the motor immediately with no deceleration.
-void L6470::free() { Xfer(dSPIN_HARD_HIZ); }
+void L64XX::free() { Xfer(dSPIN_HARD_HIZ); }
 
 // Fetch and return the 16-bit value in the L6470_STATUS register. Resets
 //  any warning flags and exits any error states. Using GetParam()
 //  to read L6470_STATUS does not clear these values.
-int16_t L6470::getStatus() {
+int16_t L64XX::getStatus() {
   Xfer(dSPIN_GET_STATUS);
   return Xfer(0) << 8 | Xfer(0);
 }
@@ -382,19 +370,19 @@ int16_t L6470::getStatus() {
 //  250ns (datasheet value)- 0x08A on boot.
 // Multiply desired steps/s/s by .137438 to get an appropriate value for this register.
 // This is a 12-bit value, so we need to make sure the value is at or below 0xFFF.
-uint32_t L6470::AccCalc(const float stepsPerSecPerSec) {
+uint32_t L64XX::AccCalc(const float stepsPerSecPerSec) {
   uint32_t temp = (uint32_t)(stepsPerSecPerSec * 0.137438);
   return temp < 0x00000FFF ? temp : 0x00000FFF;
 }
 
-uint32_t L6470::DecCalc(float stepsPerSecPerSec) {
+uint32_t L64XX::DecCalc(float stepsPerSecPerSec) {
   // The calculation for L6470_DEC is the same as for L6470_ACC. Value is 0x08A on boot.
   // This is a 12-bit value, so we need to make sure the value is at or below 0xFFF.
   uint32_t temp = (uint32_t)(stepsPerSecPerSec * 0.137438);
   return temp < 0x00000FFF ? temp : 0x00000FFF;
 }
 
-uint32_t L6470::MaxSpdCalc(const float stepsPerSec) {
+uint32_t L64XX::MaxSpdCalc(const float stepsPerSec) {
   // The value in the MAX_SPD register is [(steps/s)*(tick)]/(2^-18) where tick is
   //  250ns (datasheet value)- 0x041 on boot.
   // Multiply desired steps/s by .065536 to get an appropriate value for this register
@@ -403,7 +391,7 @@ uint32_t L6470::MaxSpdCalc(const float stepsPerSec) {
   return temp < 0x000003FF ? temp : 0x000003FF;
 }
 
-uint32_t L6470::MinSpdCalc(const float stepsPerSec) {
+uint32_t L64XX::MinSpdCalc(const float stepsPerSec) {
   // The value in the MIN_SPD register is [(steps/s)*(tick)]/(2^-24) where tick is
   //  250ns (datasheet value)- 0x000 on boot.
   // Multiply desired steps/s by 4.1943 to get an appropriate value for this register
@@ -412,7 +400,7 @@ uint32_t L6470::MinSpdCalc(const float stepsPerSec) {
   return temp < 0x00000FFF ? temp : 0x00000FFF;
 }
 
-uint32_t L6470::FSCalc(const float stepsPerSec) {
+uint32_t L64XX::FSCalc(const float stepsPerSec) {
   // The value in the L6470_FS_SPD register is ([(steps/s)*(tick)]/(2^-18))-0.5 where tick is
   //  250ns (datasheet value)- 0x027 on boot.
   // Multiply desired steps/s by .065536 and subtract .5 to get an appropriate value for this register
@@ -421,7 +409,7 @@ uint32_t L6470::FSCalc(const float stepsPerSec) {
   return temp < 0x000003FF ? temp : 0x000003FF;
 }
 
-uint32_t L6470::IntSpdCalc(const float stepsPerSec) {
+uint32_t L64XX::IntSpdCalc(const float stepsPerSec) {
   // The value in the L6470_INT_SPD register is [(steps/s)*(tick)]/(2^-24) where tick is
   //  250ns (datasheet value)- 0x408 on boot.
   // Multiply desired steps/s by 4.1943 to get an appropriate value for this register
@@ -430,7 +418,7 @@ uint32_t L6470::IntSpdCalc(const float stepsPerSec) {
   return temp < 0x00003FFF ? temp : 0x00003FFF;
 }
 
-uint32_t L6470::SpdCalc(const float stepsPerSec) {
+uint32_t L64XX::SpdCalc(const float stepsPerSec) {
   // When issuing dSPIN_RUN command, the 20-bit speed is [(steps/s)*(tick)]/(2^-28) where tick is
   //  250ns (datasheet value).
   // Multiply desired steps/s by 67.106 to get an appropriate value for this register
@@ -439,7 +427,7 @@ uint32_t L6470::SpdCalc(const float stepsPerSec) {
   return temp < 0x000FFFFF ? temp : 0x000FFFFF;
 }
 
-uint32_t L6470::Param(uint32_t value, const uint8_t bit_len) {
+uint32_t L64XX::Param(uint32_t value, const uint8_t bit_len) {
   // Generalization of the subsections of the register read/write functionality.
   //  We want the end user to just write the value without worrying about length,
   //  so we pass a bit length parameter from the calling function.
@@ -449,7 +437,7 @@ uint32_t L6470::Param(uint32_t value, const uint8_t bit_len) {
   if (value > mask) value = mask;
   // The following three if statements handle the various possible uint8_t length
   //  transfers- it'll be no less than 1 but no more than 3 uint8_ts of data.
-  // L6470::Xfer() sends a uint8_t out through SPI and returns a uint8_t received
+  // L64XX::Xfer() sends a uint8_t out through SPI and returns a uint8_t received
   //  over SPI- when calling it, we typecast a shifted version of the masked
   //  value, then we shift the received value back by the same amount and
   //  store it until return time.
@@ -468,7 +456,7 @@ uint32_t L6470::Param(uint32_t value, const uint8_t bit_len) {
   return ret_val & mask;
 }
 
-uint8_t L6470::Xfer(uint8_t data) {
+uint8_t L64XX::Xfer(uint8_t data) {
 
   if (pin_SCK < 0) {                                    // External SPI
     return (uint8_t)(
@@ -499,8 +487,8 @@ uint8_t L6470::Xfer(uint8_t data) {
     uint8_t out_data = 0;
     uint8_t return_data = 0;
     digitalWrite(pin_SS, LOW);
-    for (uint8_t i = chain[0]; i >= 1; i--) {
-      out_data = (chain[i] == position ? data : CMD_NOP);
+    for (uint8_t i = L64XX_chain[0]; i >= 1; i--) {
+      out_data = (L64XX_chain[i] == position ? data : CMD_NOP);
       uint8_t bits = 8;
       do {
         digitalWrite(pin_SCK, LOW);
@@ -511,7 +499,7 @@ uint8_t L6470::Xfer(uint8_t data) {
         out_data |= (digitalRead(pin_MISO) != 0);
       } while (--bits);
       delay(0);  // 10 cycles @ 84mhz
-      if (chain[i] == position) return_data = out_data;
+      if (L64XX_chain[i] == position) return_data = out_data;
     }
     digitalWrite(pin_SS, HIGH);
     return return_data;
@@ -519,18 +507,18 @@ uint8_t L6470::Xfer(uint8_t data) {
   return 0; // never executed but prevents a compiler warning
 }
 
-void L6470::SetParam(const uint8_t param, const uint32_t value) {
+void L64XX::SetParam(const uint8_t param, const uint32_t value) {
   Xfer(dSPIN_SET_PARAM | param);
   ParamHandler(param, value);
 }
 
 // Read from the various registers in the dSPIN chip.
-uint32_t L6470::GetParam(const uint8_t param) {
+uint32_t L64XX::GetParam(const uint8_t param) {
   Xfer(dSPIN_GET_PARAM | param);
   return ParamHandler(param, 0);
 }
 
-long L6470::convert(uint32_t val) {
+long L64XX::convert(uint32_t val) {
   // Convert 22bit 2s comp to signed long
   const int16_t MSB = val >> 21;
   val >>= 11;
@@ -546,13 +534,20 @@ long L6470::convert(uint32_t val) {
 // ParamHandler() does not list the powerSTEP01 current mode registers because
 // these registers are the same length as their voltage mode counterparts.
 
-uint32_t L6470::ParamHandler(const uint8_t param, const uint32_t value) {
+uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
   // This switch structure handles the appropriate action for each register.
   //  This is necessary since not all registers are of the same length, either
   //  bit-wise or uint8_t-wise, so we want to make sure we mask out any spurious
   //  bits and do the right number of transfers. That is handled by the dSPIN_Param()
   //  function, in most cases, but for 1-uint8_t or smaller transfers, we call
   //  Xfer() directly.
+
+  // These defines help handle the register address differences between L6470, L6480 & powerSTEP01
+  #define L6470_CONFIG_A  0x18  // L6470: L6470_CONFIG, L6480 & powerSTEP01: L6470_GATECFG1
+  #define L6470_STATUS_A  0x19  // L6470: L6470_STATUS, L6480 & powerSTEP01: L6470_GATECFG2
+  #define L6470_CONFIG_B  0x1A  // L6480 & powerSTEP01: L6470_CONFIG
+  #define L6470_STATUS_B  0x1B  // L6480 & powerSTEP01: L6470_STATUS
+
   switch (param) {
     // L6470_ABS_POS is the current absolute offset from home. It is a 22 bit number expressed
     //  in two's complement. At power up, this value is 0. It cannot be written when
@@ -632,11 +627,10 @@ uint32_t L6470::ParamHandler(const uint8_t param, const uint32_t value) {
     // Set the overcurrent threshold. Ranges from 375mA to 6A in steps of 375mA.
     //  A set of defined constants is provided for the user's convenience. Default
     //  value is 3.375A- 0x08. This is a 4-bit value.
-    case L6470_OCD_TH:     return Xfer(uint8_t(value) & 0x0F);
-
+    case L6470_OCD_TH:     return Xfer(uint8_t(value) & OCD_TH_MAX);
     // Stall current threshold. Defaults to 0x40, or 2.03A. Value is from 31.25mA to
     //  4A in 31.25mA steps. This is a 7-bit value.
-    case L6470_STALL_TH:   return Xfer(uint8_t(value) & 0x7F);
+    case L6470_STALL_TH:   return Xfer(uint8_t(value) & STALL_TH_MAX);
 
     // L6470_STEP_MODE controls the microstepping settings, as well as the generation of an
     //  output signal from the dSPIN. Bits 2:0 control the number of microsteps per
@@ -653,18 +647,27 @@ uint32_t L6470::ParamHandler(const uint8_t param, const uint32_t value) {
     //  FLAG pin.
     case L6470_ALARM_EN:   return Xfer(uint8_t(value));
 
+    // GATECFG1 & GATECFG2 - L6480 and powerSTEP01 only, these registers control the slew rate and off time of the
+    // bridge power FETs.
+
     // L6470_CONFIG contains some assorted configuration bits and fields. A fairly comprehensive
     //  set of reasonably self-explanatory constants is provided, but users should refer
     //  to the datasheet before modifying the contents of this register to be certain they
     //  understand the implications of their modifications. Value on boot is 0x2E88; this
     //  can be a useful way to verify proper start up and operation of the dSPIN chip.
-    case L6470_CONFIG:     return Param(value, 16);
+    case L6470_CONFIG_A:     if (L6470_status_layout) return Param(value, 16);  // L6470 CONFIG register
+                             else return Param(uint16_t(value & 0x07ff), 11);   // L6480 & powerSTEP01 GATECFG1 register
+    case L6470_CONFIG_B:     if (L6470_status_layout) return Param(value, 16);  // L6480 & powerSTEP01 CONFIG register
+
 
     // L6470_STATUS contains read-only information about the current condition of the chip. A
     //  comprehensive set of constants for masking and testing this register is provided, but
     //  users should refer to the datasheet to ensure that they fully understand each one of
     //  the bits in the register.
-    case L6470_STATUS:     return Param(0, 16);  // L6470_STATUS is a read-only register
+    case L6470_STATUS_A:     if (L6470_status_layout) return Param(value, 16);  // L46470 STATUS register
+                             else return Xfer(uint8_t(value));                  // L6480 & powerSTEP01 GATECFG2 register
+    case L6470_STATUS_B:     return Param(0, 16);                               // L6480 & powerSTEP01 STATUS register
+
   }
   return Xfer(uint8_t(value));
 }
