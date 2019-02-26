@@ -9,13 +9,15 @@
 //                                                                //
 ////////////////////////////////////////////////////////////////////
 
+#ifndef __L6470_H__
+#define __L6470_H__
+
 /**
  * This library is aimed at the L6470 but it also can be used
  * for other L647x devices, L648x devices and the powerSTEP01.
  *
  * Page numbers are for the L6470 data sheet.
  */
-
 
 #include <Arduino.h>
 
@@ -477,3 +479,5 @@ public:
   static const uint16_t STATUS_STEP_LOSS_B           = 0x8000; // Stall detected on B bridge
   static const uint16_t STATUS_SCK_MOD               = 0x0100; // Step clock mode is active
 };
+
+#endif // __L6470_H__
