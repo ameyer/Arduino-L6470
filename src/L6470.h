@@ -23,9 +23,6 @@
 
 #define L6470_LIBRARY_VERSION 0x000800
 
-uint8_t L6470_transfer(uint8_t data, int16_t ss_pin);                // user supplied external SPI routine for single device system
-uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t axis);  // user supplied external SPI routine for chain system
-
 //#define SCK    10  // Wire this to the CSN pin
 //#define MOSI   11  // Wire this to the SDI pin
 //#define MISO   12  // Wire this to the SDO pin
@@ -101,7 +98,7 @@ uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t axis);  // user sup
 #define ALARM_EN_SW_TURN_ON        0x40
 #define ALARM_EN_WRONG_NPERF_CMD   0x80
 
-// L6470_CONFIG register renames.
+// L64XX_CONFIG register renames.
 
 // Oscillator options.
 // The dSPIN needs to know what the clock frequency is because it uses that for some
@@ -191,7 +188,7 @@ uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t axis);  // user sup
 #define STATUS_BUSY                    0x0002 // mirrors BUSY pin
 #define STATUS_SW_F                    0x0004 // low when switch open, high when closed
 #define STATUS_SW_EVN                  0x0008 // active high, set on switch falling edge,
-                                              //  cleared by reading L6470_STATUS
+                                              //  cleared by reading L64XX_STATUS
 #define STATUS_DIR                     0x0010 // Indicates current motor direction.
                                               //  High is dSPIN_FWD, Low is dSPIN_REV.
 
@@ -274,7 +271,6 @@ public:
   L64XX();
 
   void init();
-  void spi_init();
 
   void setMicroSteps(int16_t microSteps);
   void setMaxSpeed(const int16_t speed);
@@ -338,6 +334,34 @@ public:
    // [0] - number of drivers in chain
    // [1]... axis index for first device in the chain (closest to MOSI)
 
+  // These methods must be supplied by the client
+  void spi_init();
+  uint8_t transfer(uint8_t data, const int16_t ss_pin);                      // single device system
+  uint8_t transfer(uint8_t data, const int16_t ss_pin, const uint8_t axis);  // chain system
+
+  // L6470 placeholders may be overridden by sub-classes
+  static constexpr uint8_t OCD_TH_MAX = 15;
+  static constexpr uint8_t STALL_TH_MAX = 127;
+  static constexpr float OCD_CURRENT_CONSTANT_INV = 375;                             //  mA per count
+  static constexpr float OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;    //  counts per mA
+  static constexpr float STALL_CURRENT_CONSTANT_INV = 31.25;                         //  mA per count
+  static constexpr float STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV; //  counts per mA
+
+  static constexpr uint8_t L64XX_CONFIG         = 0x18;
+  static constexpr uint8_t L64XX_STATUS         = 0x19;
+
+  static constexpr bool L6470_status_layout     = true;
+  static constexpr uint16_t STATUS_NOTPERF_CMD  = 0x0080; // Last command not performed.
+  static constexpr uint16_t STATUS_WRONG_CMD    = 0x0100; // Last command not valid.
+  static constexpr uint16_t STATUS_CMD_ERR      = 0x0180; // Command error
+  static constexpr uint16_t STATUS_UVLO         = 0x0200; // Undervoltage lockout is active
+  static constexpr uint16_t STATUS_TH_WRN       = 0x0400; // Thermal warning
+  static constexpr uint16_t STATUS_TH_SD        = 0x0800; // Thermal shutdown
+  static constexpr uint16_t STATUS_OCD          = 0x1000; // Overcurrent detected
+  static constexpr uint16_t STATUS_STEP_LOSS_A  = 0x2000; // Stall detected on A bridge
+  static constexpr uint16_t STATUS_STEP_LOSS_B  = 0x4000; // Stall detected on B bridge
+  static constexpr uint16_t STATUS_SCK_MOD      = 0x8000; // Step clock mode is active
+
 private:
   long convert(uint32_t val);
 
@@ -353,32 +377,7 @@ private:
   uint8_t Xfer(uint8_t data, int16_t ss_pin, uint8_t position);
 };
 
-class L6470 : public L64XX {
-public:
-  L6470(const int16_t pin_SS);
-
-  static constexpr uint8_t OCD_TH_MAX = 15;
-  static constexpr uint8_t STALL_TH_MAX = 127;
-  static constexpr float OCD_CURRENT_CONSTANT_INV = 375;                             //  mA per count
-  static constexpr float OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;    //  counts per mA
-  static constexpr float STALL_CURRENT_CONSTANT_INV = 31.25;                         //  mA per count
-  static constexpr float STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV; //  counts per mA
-
-  static constexpr uint8_t L6470_CONFIG         = 0x18;
-  static constexpr uint8_t L6470_STATUS         = 0x19;
-
-  static constexpr bool L6470_status_layout     = true;
-  static constexpr uint16_t STATUS_NOTPERF_CMD  = 0x0080; // Last command not performed.
-  static constexpr uint16_t STATUS_WRONG_CMD    = 0x0100; // Last command not valid.
-  static constexpr uint16_t STATUS_CMD_ERR      = 0x0180; // Command error
-  static constexpr uint16_t STATUS_UVLO         = 0x0200; // Undervoltage lockout is active
-  static constexpr uint16_t STATUS_TH_WRN       = 0x0400; // Thermal warning
-  static constexpr uint16_t STATUS_TH_SD        = 0x0800; // Thermal shutdown
-  static constexpr uint16_t STATUS_OCD          = 0x1000; // Overcurrent detected
-  static constexpr uint16_t STATUS_STEP_LOSS_A  = 0x2000; // Stall detected on A bridge
-  static constexpr uint16_t STATUS_STEP_LOSS_B  = 0x4000; // Stall detected on B bridge
-  static constexpr uint16_t STATUS_SCK_MOD      = 0x8000; // Step clock mode is active
-};
+class L6470 : public L64XX { public: L6470(const int16_t pin_SS); };
 
 class L6480 : public L64XX {
 public:
@@ -391,8 +390,8 @@ public:
   static constexpr float STALL_CURRENT_CONSTANT_INV = 31.25;                         //  mA per count
   static constexpr float STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV; //  counts per mA
 
-  static constexpr uint8_t L6470_CONFIG         = 0x1A;
-  static constexpr uint8_t L6470_STATUS         = 0x1B;
+  static constexpr uint8_t L64XX_CONFIG         = 0x1A;
+  static constexpr uint8_t L64XX_STATUS         = 0x1B;
 
   static constexpr bool L6470_status_layout = false;
   static constexpr uint16_t STATUS_NOTPERF_CMD  = 0x0080; // Last command not performed.
@@ -424,8 +423,8 @@ public:
   //static constexpr float STALL_CURRENT_CONSTANT = OCD_CURRENT_CONSTANT;                       //  counts per mA (calc per data sheet - definitely wrong)
   //static constexpr float STALL_CURRENT_CONSTANT_INV = OCD_CURRENT_CONSTANT_INV;               //  mA per count  (calc per data sheet - definitely wrong)
 
-  static constexpr uint8_t L6470_CONFIG         = 0x1A;
-  static constexpr uint8_t L6470_STATUS         = 0x1B;
+  static constexpr uint8_t L64XX_CONFIG         = 0x1A;
+  static constexpr uint8_t L64XX_STATUS         = 0x1B;
 
   static constexpr bool L6470_status_layout     = false;
   static constexpr uint16_t STATUS_NOTPERF_CMD  = 0x0080; // Last command not performed.

@@ -59,10 +59,10 @@ uint8_t L6470_SpiTransfer_Mode_3(uint8_t b) { // using Mode 3
  *
  * Note that the data for the last device in the chain is sent out first.
  *
- * The library will automatically link to "uint8_t L6470_Transfer(uint8_t,int16_t,uint8_t)"
+ * The library will automatically link to "uint8_t L64XX::transfer(uint8_t,int16_t,uint8_t)"
  */
 
-uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t chain_position) {
+uint8_t L64XX::transfer(uint8_t data, const int16_t ss_pin, const uint8_t chain_position) {
   #define CMD_NOP 0
   uint8_t data_out = 0;
   data--;
@@ -77,6 +77,8 @@ uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t chain_position) {
   digitalWrite(ss_pin, HIGH);
   return data_out;
 }
+
+uint8_t L64XX::transfer(uint8_t data, const int16_t ss_pin) { }
 
 /**
  * This is the routine that sends the motion commands.
@@ -101,10 +103,10 @@ void Buffer_Transfer(uint8_t buffer[] , uint8_t length) {
 /**
  * Initialize pins for non-library SPI software
  *
- * The library will automatically link to "void L6470::spi_init()"
+ * The library will automatically link to "void L64XX::spi_init()"
  */
 
-void L6470::spi_init() {
+void L64XX::spi_init() {
   pinMode(SS_PIN, OUTPUT);
   pinMode(SCK_PIN, OUTPUT);
   pinMode(MOSI_PIN, OUTPUT);

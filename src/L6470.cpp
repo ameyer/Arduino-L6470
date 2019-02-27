@@ -47,11 +47,11 @@ void L64XX::init() {
   //  SPI clock not to exceed 5MHz,
   //  SPI_MODE3 (clock idle high, latch data on rising edge of clock)
   if (pin_SCK < 0) spi_init();  // using external SPI to init it
-                                      // internal SPI already initialized
+                                // internal SPI already initialized
 
-  // First things first: let's check communications. The L6470_CONFIG register should
+  // First things first: let's check communications. The L64XX_CONFIG register should
   //  power up to 0x2E88, so we can use that to check the communications.
-  //Serial.println(GetParam(L6470_CONFIG) == 0x2E88 ? "good to go" : "Comm issue");
+  //Serial.println(GetParam(L64XX_CONFIG) == 0x2E88 ? "good to go" : "Comm issue");
 
   // First, let's set the step mode register:
   //   - SYNC_EN controls whether the BUSY/SYNC pin reflects the step
@@ -63,7 +63,7 @@ void L64XX::init() {
   //     not using that pin.
   //SetParam(L6470_STEP_MODE, !SYNC_EN | STEP_SEL_1 | SYNC_SEL_1);
 
-  // Set up the L6470_CONFIG register as follows:
+  // Set up the L64XX_CONFIG register as follows:
   //  PWM frequency divisor = 1
   //  PWM frequency multiplier = 2 (62.5kHz PWM frequency)
   //  Slew rate is 110V/us
@@ -71,7 +71,7 @@ void L64XX::init() {
   //  Disable motor voltage compensation
   //  Hard stop on switch low
   //  16MHz internal oscillator, nothing on output
-  SetParam(L6470_CONFIG, CONFIG_PWM_DIV_1 | CONFIG_PWM_MUL_2 | CONFIG_SR_110V_us | CONFIG_OC_SD_DISABLE | CONFIG_VS_COMP_DISABLE | CONFIG_SW_HARD_STOP | CONFIG_INT_16MHZ);
+  SetParam(L64XX_CONFIG, CONFIG_PWM_DIV_1 | CONFIG_PWM_MUL_2 | CONFIG_SR_110V_us | CONFIG_OC_SD_DISABLE | CONFIG_VS_COMP_DISABLE | CONFIG_SW_HARD_STOP | CONFIG_INT_16MHZ);
 
  // Configure the dSPIN_RUN KVAL. This defines the duty cycle of the PWM of the bridges
   //  during running. 0xFF means that they are essentially NOT PWMed during run; this
@@ -284,7 +284,7 @@ void L64XX::goTo_DIR(const uint8_t dir, long pos) {
 
 // GoUntil will set the motor running with direction dir (dSPIN_REV or
 //  dSPIN_FWD) until a falling edge is detected on the SW pin. Depending
-//  on bit SW_MODE in L6470_CONFIG, either a hard stop or a soft stop is
+//  on bit SW_MODE in L64XX_CONFIG, either a hard stop or a soft stop is
 //  performed at the falling edge, and depending on the value of
 //  act (either RESET or COPY) the value in the L6470_ABS_POS register is
 //  either RESET to 0 or COPY-ed into the L6470_MARK register.
@@ -356,9 +356,9 @@ void L64XX::softFree() { Xfer(dSPIN_SOFT_HIZ); }
 // Disengage the motor immediately with no deceleration.
 void L64XX::free() { Xfer(dSPIN_HARD_HIZ); }
 
-// Fetch and return the 16-bit value in the L6470_STATUS register. Resets
+// Fetch and return the 16-bit value in the L64XX_STATUS register. Resets
 //  any warning flags and exits any error states. Using GetParam()
-//  to read L6470_STATUS does not clear these values.
+//  to read L64XX_STATUS does not clear these values.
 int16_t L64XX::getStatus() {
   Xfer(dSPIN_GET_STATUS);
   return Xfer(0) << 8 | Xfer(0);
@@ -458,8 +458,8 @@ uint8_t L64XX::Xfer(uint8_t data) {
 
   if (pin_SCK < 0) {                                    // External SPI
     return (uint8_t)(
-      position ? L6470_transfer(data, pin_SS, position) // ... in a chain
-               : L6470_transfer(data, pin_SS)           // ... not chained
+      position ? transfer(data, pin_SS, position) // ... in a chain
+               : transfer(data, pin_SS)           // ... not chained
     );
   }
 
@@ -541,10 +541,10 @@ uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
   //  Xfer() directly.
 
   // These defines help handle the register address differences between L6470, L6480 & powerSTEP01
-  #define L6470_CONFIG_A  0x18  // L6470: L6470_CONFIG, L6480 & powerSTEP01: L6470_GATECFG1
-  #define L6470_STATUS_A  0x19  // L6470: L6470_STATUS, L6480 & powerSTEP01: L6470_GATECFG2
-  #define L6470_CONFIG_B  0x1A  // L6480 & powerSTEP01: L6470_CONFIG
-  #define L6470_STATUS_B  0x1B  // L6480 & powerSTEP01: L6470_STATUS
+  #define L64XX_CONFIG_A  0x18  // L6470: L64XX_CONFIG, L6480 & powerSTEP01: L6470_GATECFG1
+  #define L64XX_STATUS_A  0x19  // L6470: L64XX_STATUS, L6480 & powerSTEP01: L6470_GATECFG2
+  #define L64XX_CONFIG_B  0x1A  // L6480 & powerSTEP01: L64XX_CONFIG
+  #define L64XX_STATUS_B  0x1B  // L6480 & powerSTEP01: L64XX_STATUS
 
   switch (param) {
     // L6470_ABS_POS is the current absolute offset from home. It is a 22 bit number expressed
@@ -648,23 +648,23 @@ uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
     // GATECFG1 & GATECFG2 - L6480 and powerSTEP01 only, these registers control the slew rate and off time of the
     // bridge power FETs.
 
-    // L6470_CONFIG contains some assorted configuration bits and fields. A fairly comprehensive
+    // L64XX_CONFIG contains some assorted configuration bits and fields. A fairly comprehensive
     //  set of reasonably self-explanatory constants is provided, but users should refer
     //  to the datasheet before modifying the contents of this register to be certain they
     //  understand the implications of their modifications. Value on boot is 0x2E88; this
     //  can be a useful way to verify proper start up and operation of the dSPIN chip.
-    case L6470_CONFIG_A:     if (L6470_status_layout) return Param(value, 16);  // L6470 CONFIG register
+    case L64XX_CONFIG_A:     if (L6470_status_layout) return Param(value, 16);  // L6470 CONFIG register
                              else return Param(uint16_t(value & 0x07ff), 11);   // L6480 & powerSTEP01 GATECFG1 register
-    case L6470_CONFIG_B:     if (L6470_status_layout) return Param(value, 16);  // L6480 & powerSTEP01 CONFIG register
+    case L64XX_CONFIG_B:     if (L6470_status_layout) return Param(value, 16);  // L6480 & powerSTEP01 CONFIG register
 
 
-    // L6470_STATUS contains read-only information about the current condition of the chip. A
+    // L64XX_STATUS contains read-only information about the current condition of the chip. A
     //  comprehensive set of constants for masking and testing this register is provided, but
     //  users should refer to the datasheet to ensure that they fully understand each one of
     //  the bits in the register.
-    case L6470_STATUS_A:     if (L6470_status_layout) return Param(value, 16);  // L46470 STATUS register
+    case L64XX_STATUS_A:     if (L6470_status_layout) return Param(value, 16);  // L46470 STATUS register
                              else return Xfer(uint8_t(value));                  // L6480 & powerSTEP01 GATECFG2 register
-    case L6470_STATUS_B:     return Param(0, 16);                               // L6480 & powerSTEP01 STATUS register
+    case L64XX_STATUS_B:     return Param(0, 16);                               // L6480 & powerSTEP01 STATUS register
 
   }
   return Xfer(uint8_t(value));
