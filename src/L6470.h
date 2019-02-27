@@ -23,10 +23,6 @@
 
 #define L6470_LIBRARY_VERSION 0x000800
 
-extern uint8_t L64XX_chain[21];
-   // [0] - number of drivers in chain
-   // [1]... axis index for first device in the chain (closest to MOSI)
-
 uint8_t L6470_transfer(uint8_t data, int16_t ss_pin);                // user supplied external SPI routine for single device system
 uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t axis);  // user supplied external SPI routine for chain system
 
@@ -337,6 +333,10 @@ public:
 
   uint8_t axis_index;
   uint8_t position = 0;  // 0 - not part of a chain
+
+  static uint8_t chain[21];
+   // [0] - number of drivers in chain
+   // [1]... axis index for first device in the chain (closest to MOSI)
 
 private:
   long convert(uint32_t val);
