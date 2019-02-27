@@ -57,7 +57,9 @@ uint8_t L6470_SpiTransfer_Mode_3(uint8_t b) { // using Mode 3
  * This routine sends/receives one uint8_t to the target device.  All other
  * Devices are sent the NOOP command.
  *
- * Note that the data for the last device in the chain is sent out first.
+ * Send/receive one uint8_t to the target device. All other devices get a NOOP command.
+ *
+ * Data for the last device in the chain is sent out first!
  *
  * The library will automatically link to "uint8_t L6470_Transfer(uint8_t,int16_t,uint8_t)"
  */
@@ -69,9 +71,9 @@ uint8_t L6470_transfer(uint8_t data, int16_t ss_pin, uint8_t chain_position) {
   // first device in chain has data sent last
   digitalWrite(ss_pin, LOW);
 
-  for (uint8_t i = L6470::chain[0]; i >= 1; i--) {
+  for (uint8_t i = L64XX::chain[0]; i >= 1; i--) {
     uint8_t temp = L6470_SpiTransfer_Mode_3(uint8_t(i == chain_position ? data : CMD_NOP));
-    if (L6470::chain[i] == chain_position) data_out = temp;
+    if (L64XX::chain[i] == chain_position) data_out = temp;
   }
 
   digitalWrite(ss_pin, HIGH);
@@ -127,10 +129,10 @@ void goTo(long location_1, long location_2) {
   uint8_t addr15_8[3]  = { 0, uint8_t(location_1 >>  8), uint8_t(location_2 >>  8) };
   uint8_t addr7_0[3]   = { 0, uint8_t(location_1)      , uint8_t(location_2)       };
 
-  Buffer_Transfer(buffer_command, L6470::chain[0]);  // send the commands
-  Buffer_Transfer(addr21_16     , L6470::chain[0]);  // send the MSB of the position
-  Buffer_Transfer(addr15_8      , L6470::chain[0]);
-  Buffer_Transfer(addr7_0       , L6470::chain[0]);  // this one results in the motors moving
+  Buffer_Transfer(buffer_command, L64XX::chain[0]);  // send the commands
+  Buffer_Transfer(addr21_16     , L64XX::chain[0]);  // send the MSB of the position
+  Buffer_Transfer(addr15_8      , L64XX::chain[0]);
+  Buffer_Transfer(addr7_0       , L64XX::chain[0]);  // this one results in the motors moving
 }
 
 //////////////////////////////////////////////////////////////////////
