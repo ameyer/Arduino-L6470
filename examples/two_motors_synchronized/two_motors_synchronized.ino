@@ -52,10 +52,20 @@ uint8_t L6470_SpiTransfer_Mode_3(uint8_t b) { // using Mode 3
 }
 
 /**
- * This is the routine involved in all non-motion commands/transfers
- *
- * This routine sends/receives one uint8_t to the target device.  All other
- * Devices are sent the NOOP command.
+ * Initialize pins for non-library SPI software
+ */
+static void spi_init() {
+  pinMode(SS_PIN, OUTPUT);
+  pinMode(SCK_PIN, OUTPUT);
+  pinMode(MOSI_PIN, OUTPUT);
+  digitalWrite(SS_PIN, HIGH);
+  digitalWrite(SCK_PIN, HIGH);
+  digitalWrite(MOSI_PIN, HIGH);
+  pinMode(MISO_PIN, INPUT);
+}
+
+/**
+ * Used in all non-motion commands/transfers
  *
  * Send/receive one uint8_t to the target device. All other devices get a NOOP command.
  *
@@ -63,8 +73,7 @@ uint8_t L6470_SpiTransfer_Mode_3(uint8_t b) { // using Mode 3
  *
  * The library will automatically link to "uint8_t L64XX::transfer(uint8_t,int16_t,uint8_t)"
  */
-
-uint8_t L64XX::transfer(uint8_t data, const int16_t ss_pin, const uint8_t chain_position) {
+static uint8_t chain_transfer(uint8_t data, const int16_t ss_pin, const uint8_t chain_position) {
   #define CMD_NOP 0
   uint8_t data_out = 0;
   data--;
@@ -80,7 +89,7 @@ uint8_t L64XX::transfer(uint8_t data, const int16_t ss_pin, const uint8_t chain_
   return data_out;
 }
 
-uint8_t L64XX::transfer(uint8_t data, const int16_t ss_pin) { }
+static uint8_t transfer(uint8_t data, const int16_t ss_pin) { }
 
 /**
  * This is the routine that sends the motion commands.
@@ -100,22 +109,6 @@ void Buffer_Transfer(uint8_t buffer[] , uint8_t length) {
   for (uint8_t i = length; i >= 1; i--)
     buffer[i] = L6470_SpiTransfer_Mode_3(uint8_t (buffer[i]));
   digitalWrite(SS_PIN, HIGH);
-}
-
-/**
- * Initialize pins for non-library SPI software
- *
- * The library will automatically link to "void L64XX::spi_init()"
- */
-
-void L64XX::spi_init() {
-  pinMode(SS_PIN, OUTPUT);
-  pinMode(SCK_PIN, OUTPUT);
-  pinMode(MOSI_PIN, OUTPUT);
-  digitalWrite(SS_PIN, HIGH);
-  digitalWrite(SCK_PIN, HIGH);
-  digitalWrite(MOSI_PIN, HIGH);
-  pinMode(MISO_PIN, INPUT);
 }
 
 void goTo(long location_1, long location_2) {
@@ -139,43 +132,61 @@ void goTo(long location_1, long location_2) {
 
 //////////////////////////////////////////////////////////////////////
 
-L6470 stepperA(SS_PIN);           // create first stepper object
-L6470 stepperB(SS_PIN);           // create second stepper object
-
 void setup() {
 
-  pinMode(RESET_PIN,OUTPUT);        // reset all drivers
-  digitalWrite(RESET_PIN, LOW);     // do this before any setup commands are sent to the drivers
+  Serial.begin(115200);
+
+  L6470 stepperA(SS_PIN, spi_init, transfer, chain_transfer);
+  //L6480 stepperB(SS_PIN, spi_init, transfer, chain_transfer);
+  //powerSTEP01 stepperC(SS_PIN);
+
+  return;
+
+  /*
+  pinMode(RESET_PIN,OUTPUT);        // Reset all drivers
+  digitalWrite(RESET_PIN, LOW);     // Do this before any setup commands are sent to the drivers
   delay(10);
   digitalWrite(RESET_PIN, HIGH);
 
-  stepperA.set_chain_info(56, 1);     // completely setup chain[] before
-  stepperB.set_chain_info(56, 2);     // any SPI traffic is sent
+  stepperA.set_chain_info(56, 1);   // Completely setup chain[] before
+  stepperB.set_chain_info(56, 2);   // Any SPI traffic is sent
 
   stepperA.init();
-  stepperA.setAcc(100);              // Set acceleration
+  stepperA.setAcc(100);             // Set acceleration
   stepperA.setMaxSpeed(800);
   stepperA.setMinSpeed(1);
-  stepperA.setMicroSteps(2);         // 1,2,4,8,16,32,64 or 128
+  stepperA.setMicroSteps(2);        // 1,2,4,8,16,32,64 or 128
   stepperA.setThresholdSpeed(1000);
-  stepperA.setOverCurrent(6000);     // Set overcurrent protection
+  stepperA.setOverCurrent(6000);    // Set overcurrent protection
   stepperA.setStallCurrent(3000);
 
   stepperB.init();
-  stepperB.setAcc(100);              // Set acceleration
+  stepperB.setAcc(100);             // Set acceleration
   stepperB.setMaxSpeed(800);
   stepperB.setMinSpeed(1);
-  stepperB.setMicroSteps(2);         // 1,2,4,8,16,32,64 or 128
+  stepperB.setMicroSteps(2);        // 1,2,4,8,16,32,64 or 128
   stepperB.setThresholdSpeed(1000);
-  stepperB.setOverCurrent(6000);     // Set overcurrent protection
+  stepperB.setOverCurrent(6000);    // Set overcurrent protection
   stepperB.setStallCurrent(3000);
 
-  goTo(200,200);                     //  spin the motors at the same time
+  goTo(200,200);                    // Spin the motors at the same time
+  */
 }
 
 void loop() {
+
+  static uint32_t next_ms = millis() + 500UL;
+  uint32_t ms = millis();
+  if (ms >= next_ms) {
+    Serial.println("tick");
+    next_ms = ms + 500UL;
+  }
+
+  return;
+  /*
   while (stepperB.isBusy()) delay(10);
   goTo(-200,-200);
   while (stepperB.isBusy()) delay(10);
   goTo(2000,2000);
+  */
 }

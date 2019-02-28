@@ -236,7 +236,6 @@
 #define PWR_TON_MIN           0X0F
 #define PWR_TOFF_MIN          0X10
 
-
 // dSPIN commands
 #define dSPIN_NOP             0x00
 #define dSPIN_SET_PARAM       0x00
@@ -268,9 +267,49 @@
 
 class L64XX {
 public:
-  L64XX();
+  int16_t pin_SS    = -1,
+          pin_SCK   = -1,
+          pin_MOSI  = -1,
+          pin_MISO  = -1,
+          pin_RESET = -1,
+          pin_BUSYN = -1;
+
+  static uint8_t chain[21];
+   // [0] - number of drivers in chain
+   // [1]... axis index for first device in the chain (closest to MOSI)
+
+  uint8_t axis_index;
+  uint8_t position = 0;  // 0 - not part of a chain
+
+  // These methods must be supplied by the client
+  typedef void (*spi_init_handler_t)();
+  typedef uint8_t (*transfer_handler_t)(uint8_t data, const int16_t ss_pin);
+  typedef uint8_t (*chain_transfer_handler_t)(uint8_t data, const int16_t ss_pin, const uint8_t chain_position);
+
+  static spi_init_handler_t spi_init;
+  static transfer_handler_t transfer;
+  static chain_transfer_handler_t chain_transfer;
+
+  static inline void set_spi_init_handler(spi_init_handler_t _spi_init) { spi_init = _spi_init; }
+  static inline void set_transfer_handler(transfer_handler_t _transfer) { transfer = _transfer; }
+  static inline void set_chain_transfer_handler(chain_transfer_handler_t _chain_transfer) { chain_transfer = _chain_transfer; }
+
+  static void set_handlers(spi_init_handler_t _spi_init, transfer_handler_t _transfer, chain_transfer_handler_t _chain_transfer) {
+    set_spi_init_handler(_spi_init);
+    set_transfer_handler(_transfer);
+    set_chain_transfer_handler(_chain_transfer);
+  }
 
   void init();
+
+  inline void init(const uint16_t ss_pin) { pin_SS = ss_pin; }
+  inline void init(const uint16_t ss_pin, spi_init_handler_t _spi_init, transfer_handler_t _transfer, chain_transfer_handler_t _chain_transfer) {
+    pin_SS = ss_pin;
+    set_handlers(_spi_init, _transfer, _chain_transfer);
+  }
+
+  void set_pins(const int16_t SCK, const int16_t MOSI, const int16_t MISO, const int16_t RESET, const int16_t BUSYN);
+  void set_chain_info(const uint8_t axis_index, const uint8_t position);
 
   void setMicroSteps(int16_t microSteps);
   void setMaxSpeed(const int16_t speed);
@@ -316,29 +355,6 @@ public:
   void SetParam(const uint8_t param, const uint32_t value);
   uint32_t GetParam(const uint8_t param);
 
-  void set_chain_info(const uint8_t axis_index, const uint8_t position);
-
-  void set_pins(const int16_t SCK, const int16_t MOSI, const int16_t MISO, const int16_t RESET, const int16_t BUSYN);
-
-  int16_t pin_SS    = -1,
-          pin_SCK   = -1,
-          pin_MOSI  = -1,
-          pin_MISO  = -1,
-          pin_RESET = -1,
-          pin_BUSYN = -1;
-
-  uint8_t axis_index;
-  uint8_t position = 0;  // 0 - not part of a chain
-
-  static uint8_t chain[21];
-   // [0] - number of drivers in chain
-   // [1]... axis index for first device in the chain (closest to MOSI)
-
-  // These methods must be supplied by the client
-  static void spi_init();
-  uint8_t transfer(uint8_t data, const int16_t ss_pin);                      // single device system
-  uint8_t transfer(uint8_t data, const int16_t ss_pin, const uint8_t axis);  // chain system
-
   // L6470 placeholders may be overridden by sub-classes
   static constexpr uint8_t OCD_TH_MAX = 15;
   static constexpr uint8_t STALL_TH_MAX = 127;
@@ -375,26 +391,26 @@ private:
   uint32_t Param(uint32_t value, const uint8_t bit_len);
   uint8_t Xfer(uint8_t data);
   uint8_t Xfer(uint8_t data, int16_t ss_pin, uint8_t position);
+
+  static inline void spi_init_noop() { }
+  static inline uint8_t transfer_noop(uint8_t data, const int16_t ss_pin) { }
+  static inline uint8_t chain_transfer_noop(uint8_t data, const int16_t ss_pin, const uint8_t chain_position) { }
 };
 
-class L6470 : public L64XX { public: L6470(const int16_t pin_SS); };
-
-class L6480 : public L64XX {
+class L6470 : public L64XX {
 public:
-  L6480(const int16_t pin_SS);
+  L6470(const int16_t ss_pin) { init(ss_pin); }
+  L6470(const int16_t ss_pin, spi_init_handler_t _spi_init, transfer_handler_t _transfer, chain_transfer_handler_t _chain_transfer) {
+    init(ss_pin, _spi_init, _transfer, _chain_transfer);
+  }
+};
 
-  static constexpr uint8_t OCD_TH_MAX = 31;
-  static constexpr uint8_t STALL_TH_MAX = 31;
-  static constexpr float OCD_CURRENT_CONSTANT_INV = 31.25;                           //  mA per count
-  static constexpr float OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;   //  counts per mA
-  static constexpr float STALL_CURRENT_CONSTANT_INV = 31.25;                         //  mA per count
-  static constexpr float STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV; //  counts per mA
-
+class L6480_Base : public L64XX {
+public:
   static constexpr uint8_t L64XX_CONFIG         = 0x1A;
   static constexpr uint8_t L64XX_STATUS         = 0x1B;
 
   static constexpr bool L6470_status_layout = false;
-  static constexpr uint16_t STATUS_NOTPERF_CMD  = 0x0080; // Last command not performed.
   static constexpr uint16_t STATUS_WRONG_CMD    = 0x0080; // Last command not valid.
   static constexpr uint16_t STATUS_CMD_ERR      = 0x0080; // Command error
   static constexpr uint16_t STATUS_UVLO         = 0x0200; // Undervoltage lockout is active
@@ -407,9 +423,27 @@ public:
   static constexpr uint16_t STATUS_SCK_MOD      = 0x0100; // Step clock mode is active
 };
 
-class powerSTEP01 : public L64XX {
+class L6480 : public L6480_Base {
 public:
-  powerSTEP01(const int16_t pin_SS);
+  L6480(const int16_t ss_pin) { init(ss_pin); }
+  L6480(const int16_t ss_pin, spi_init_handler_t _spi_init, transfer_handler_t _transfer, chain_transfer_handler_t _chain_transfer) {
+    init(ss_pin, _spi_init, _transfer, _chain_transfer);
+  }
+
+  static constexpr uint8_t OCD_TH_MAX = 31;
+  static constexpr uint8_t STALL_TH_MAX = 31;
+  static constexpr float OCD_CURRENT_CONSTANT_INV = 31.25;                           //  mA per count
+  static constexpr float OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;   //  counts per mA
+  static constexpr float STALL_CURRENT_CONSTANT_INV = 31.25;                         //  mA per count
+  static constexpr float STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV; //  counts per mA
+};
+
+class powerSTEP01 : public L6480_Base {
+public:
+  powerSTEP01(const int16_t ss_pin) { init(ss_pin); }
+  powerSTEP01(const int16_t ss_pin, spi_init_handler_t _spi_init, transfer_handler_t _transfer, chain_transfer_handler_t _chain_transfer) {
+    init(ss_pin, _spi_init, _transfer, _chain_transfer);
+  }
 
   static constexpr uint8_t OCD_TH_MAX = 31;
   static constexpr uint8_t STALL_TH_MAX = 31;
@@ -422,22 +456,6 @@ public:
   //static constexpr float OCD_CURRENT_CONSTANT_INV = (1000 * 0.03125)/(POWERSTEP_AVERAGE_RDS); //  mA per count  (calc per data sheet - definitely wrong)
   //static constexpr float STALL_CURRENT_CONSTANT = OCD_CURRENT_CONSTANT;                       //  counts per mA (calc per data sheet - definitely wrong)
   //static constexpr float STALL_CURRENT_CONSTANT_INV = OCD_CURRENT_CONSTANT_INV;               //  mA per count  (calc per data sheet - definitely wrong)
-
-  static constexpr uint8_t L64XX_CONFIG         = 0x1A;
-  static constexpr uint8_t L64XX_STATUS         = 0x1B;
-
-  static constexpr bool L6470_status_layout     = false;
-  static constexpr uint16_t STATUS_NOTPERF_CMD  = 0x0080; // Last command not performed.
-  static constexpr uint16_t STATUS_WRONG_CMD    = 0x0080; // Last command not valid.
-  static constexpr uint16_t STATUS_CMD_ERR      = 0x0080; // Command error
-  static constexpr uint16_t STATUS_UVLO         = 0x0200; // Undervoltage lockout is active
-  static constexpr uint16_t UVLO_ADC            = 0x0400; // ADC undervoltage event
-  static constexpr uint16_t STATUS_TH_WRN       = 0x0800; // Thermal warning
-  static constexpr uint16_t STATUS_TH_SD        = 0x1000; // Thermal shutdown
-  static constexpr uint16_t STATUS_OCD          = 0x2000; // Overcurrent detected
-  static constexpr uint16_t STATUS_STEP_LOSS_A  = 0x4000; // Stall detected on A bridge
-  static constexpr uint16_t STATUS_STEP_LOSS_B  = 0x8000; // Stall detected on B bridge
-  static constexpr uint16_t STATUS_SCK_MOD      = 0x0100; // Step clock mode is active
 };
 
 #endif // _L6470_H_

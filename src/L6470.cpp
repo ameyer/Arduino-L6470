@@ -13,24 +13,11 @@
 
 #include <Arduino.h>
 
+L64XX::spi_init_handler_t L64XX::spi_init = spi_init_noop;
+L64XX::transfer_handler_t L64XX::transfer = transfer_noop;
+L64XX::chain_transfer_handler_t L64XX::chain_transfer = chain_transfer_noop;
+
 uint8_t L64XX::chain[21];
-
-L64XX::L64XX() {}
-
-L6470::L6470(const int16_t ss_pin) {
-  pin_SS = ss_pin;
-  // Serial.begin(9600);
-}
-
-L6480::L6480(const int16_t ss_pin) {
-  pin_SS = ss_pin;
-  // Serial.begin(9600);
-}
-
-powerSTEP01::powerSTEP01(const int16_t ss_pin) {
-  pin_SS = ss_pin;
-  // Serial.begin(9600);
-}
 
 // Generic init function to set up communication with the dSPIN chip.
 
@@ -46,7 +33,7 @@ void L64XX::init() {
   //  most significant bit first,
   //  SPI clock not to exceed 5MHz,
   //  SPI_MODE3 (clock idle high, latch data on rising edge of clock)
-  if (pin_SCK < 0) spi_init();  // using external SPI to init it
+  if (pin_SCK < 0) spi_init();  // Use external SPI init function to init it
                                 // internal SPI already initialized
 
   // First things first: let's check communications. The L64XX_CONFIG register should
@@ -91,7 +78,7 @@ void L64XX::init() {
   hardStop(); //engage motors
 }
 
-// add to the chain array and save chain info for this stepper
+// Add to the chain array and save chain info for this stepper
 void L64XX::set_chain_info(const uint8_t axis, const uint8_t chain_position) {
   if (chain_position) {
     chain[0]++;
@@ -100,10 +87,10 @@ void L64XX::set_chain_info(const uint8_t axis, const uint8_t chain_position) {
     axis_index = axis;
   }
   else
-    chain[0] = 0;  //reset array back to uninitialized
+    chain[0] = 0;  // Reset array back to uninitialized
 }
 
-// Sets optional pins for this stepper
+// Set optional pins for this stepper
 // pin_SS is set by the instantiation call.
 void L64XX::set_pins(const int16_t sck, const int16_t mosi, const int16_t miso, const int16_t reset, const int16_t busyn) {
   pin_SCK    = sck;
@@ -457,9 +444,9 @@ uint32_t L64XX::Param(uint32_t value, const uint8_t bit_len) {
 uint8_t L64XX::Xfer(uint8_t data) {
 
   if (pin_SCK < 0) {                                    // External SPI
-    return (uint8_t)(
-      position ? transfer(data, pin_SS, position) // ... in a chain
-               : transfer(data, pin_SS)           // ... not chained
+    return (uint8_t) (
+      position ? chain_transfer(data, pin_SS, position) // ... in a chain
+               : transfer(data, pin_SS)                 // ... not chained
     );
   }
 
