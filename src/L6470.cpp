@@ -13,15 +13,14 @@
 
 #include <Arduino.h>
 
-L64XX::spi_init_handler_t L64XX::spi_init = spi_init_noop;
-L64XX::transfer_handler_t L64XX::transfer = transfer_noop;
-L64XX::chain_transfer_handler_t L64XX::chain_transfer = chain_transfer_noop;
+L64XXHelper nullHelper;
+L64XXHelper& L64XX::helper = nullHelper;
 
 uint8_t L64XX::chain[21];
 
 // Generic init function to set up communication with the dSPIN chip.
 
-// call this after setting up the SPI(s) (after all "L64XX::set_pins" and "set_chain_info" commands)
+// Call this after setting up the SPI(s) (after all "L64XX::set_pins" and "set_chain_info" commands)
 void L64XX::init() {
 
   if (pin_SS >= 0) {   //init pin_SS if it has been set for this chip
@@ -33,8 +32,8 @@ void L64XX::init() {
   //  most significant bit first,
   //  SPI clock not to exceed 5MHz,
   //  SPI_MODE3 (clock idle high, latch data on rising edge of clock)
-  if (pin_SCK < 0) spi_init();  // Use external SPI init function to init it
-                                // internal SPI already initialized
+  if (pin_SCK < 0) helper.spi_init();  // Use external SPI init function to init it
+                                       // internal SPI already initialized
 
   // First things first: let's check communications. The L64XX_CONFIG register should
   //  power up to 0x2E88, so we can use that to check the communications.
@@ -60,7 +59,7 @@ void L64XX::init() {
   //  16MHz internal oscillator, nothing on output
   SetParam(L64XX_CONFIG, CONFIG_PWM_DIV_1 | CONFIG_PWM_MUL_2 | CONFIG_SR_110V_us | CONFIG_OC_SD_DISABLE | CONFIG_VS_COMP_DISABLE | CONFIG_SW_HARD_STOP | CONFIG_INT_16MHZ);
 
- // Configure the dSPIN_RUN KVAL. This defines the duty cycle of the PWM of the bridges
+  // Configure the dSPIN_RUN KVAL. This defines the duty cycle of the PWM of the bridges
   //  during running. 0xFF means that they are essentially NOT PWMed during run; this
   //  MAY result in more power being dissipated than you actually need for the task.
   //  Setting this value too low may result in failure to turn.
@@ -70,12 +69,12 @@ void L64XX::init() {
   SetParam(L6470_KVAL_ACC, 0xFF);
   SetParam(L6470_KVAL_DEC, 0xFF);
 
-// Calling GetStatus() clears the UVLO bit in the status register, which is set by
+  // Calling getStatus() clears the UVLO bit in the status register, which is set by
   //  default on power-up. The driver may not run without that bit cleared by this
   //  read operation.
   getStatus();
 
-  hardStop(); //engage motors
+  hardStop(); // engage motors
 }
 
 // Add to the chain array and save chain info for this stepper
@@ -92,7 +91,7 @@ void L64XX::set_chain_info(const uint8_t axis, const uint8_t chain_position) {
 
 // Set optional pins for this stepper
 // pin_SS is set by the instantiation call.
-void L64XX::set_pins(const int16_t sck, const int16_t mosi, const int16_t miso, const int16_t reset, const int16_t busyn) {
+void L64XX::set_pins(const _pin_t sck, const _pin_t mosi, const _pin_t miso, const _pin_t reset, const _pin_t busyn) {
   pin_SCK    = sck;
   pin_MOSI   = mosi;
   pin_MISO   = miso;
@@ -443,10 +442,10 @@ uint32_t L64XX::Param(uint32_t value, const uint8_t bit_len) {
 
 uint8_t L64XX::Xfer(uint8_t data) {
 
-  if (pin_SCK < 0) {                                    // External SPI
-    return (uint8_t) (
-      position ? chain_transfer(data, pin_SS, position) // ... in a chain
-               : transfer(data, pin_SS)                 // ... not chained
+  if (pin_SCK < 0) {                                      // External SPI
+    return uint8_t(
+      position ? helper.transfer(data, pin_SS, position)  // ... in a chain
+               : helper.transfer(data, pin_SS)            // ... not chained
     );
   }
 

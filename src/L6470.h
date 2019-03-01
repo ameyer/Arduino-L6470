@@ -265,9 +265,21 @@
 #define dSPIN_ACTION_RESET    0x00
 #define dSPIN_ACTION_COPY     0x01
 
+typedef uint16_t _pin_t;
+
+class L64XXHelper {
+protected:
+  friend class L64XX;
+  static inline void spi_init() { }
+  static inline uint8_t transfer(uint8_t data, const _pin_t ss_pin) { }
+  static inline uint8_t transfer(uint8_t data, const _pin_t ss_pin, const uint8_t chain_position) { }
+};
+
+extern L64XXHelper nullHelper;
+
 class L64XX {
 public:
-  int16_t pin_SS    = -1,
+  _pin_t  pin_SS    = -1,
           pin_SCK   = -1,
           pin_MOSI  = -1,
           pin_MISO  = -1,
@@ -281,34 +293,20 @@ public:
   uint8_t axis_index;
   uint8_t position = 0;  // 0 - not part of a chain
 
-  // These methods must be supplied by the client
-  typedef void (*spi_init_handler_t)();
-  typedef uint8_t (*transfer_handler_t)(uint8_t data, const int16_t ss_pin);
-  typedef uint8_t (*chain_transfer_handler_t)(uint8_t data, const int16_t ss_pin, const uint8_t chain_position);
+  // This object must be supplied by the client
+  static L64XXHelper &helper;
 
-  static spi_init_handler_t spi_init;
-  static transfer_handler_t transfer;
-  static chain_transfer_handler_t chain_transfer;
-
-  static inline void set_spi_init_handler(spi_init_handler_t _spi_init) { spi_init = _spi_init; }
-  static inline void set_transfer_handler(transfer_handler_t _transfer) { transfer = _transfer; }
-  static inline void set_chain_transfer_handler(chain_transfer_handler_t _chain_transfer) { chain_transfer = _chain_transfer; }
-
-  static void set_handlers(spi_init_handler_t _spi_init, transfer_handler_t _transfer, chain_transfer_handler_t _chain_transfer) {
-    set_spi_init_handler(_spi_init);
-    set_transfer_handler(_transfer);
-    set_chain_transfer_handler(_chain_transfer);
-  }
+  static inline void set_helper(L64XXHelper & _helper) { helper = _helper; }
 
   void init();
 
-  inline void init(const uint16_t ss_pin) { pin_SS = ss_pin; }
-  inline void init(const uint16_t ss_pin, spi_init_handler_t _spi_init, transfer_handler_t _transfer, chain_transfer_handler_t _chain_transfer) {
+  inline void init(const _pin_t ss_pin) { pin_SS = ss_pin; }
+  inline void init(const _pin_t ss_pin, L64XXHelper &_helper) {
     pin_SS = ss_pin;
-    set_handlers(_spi_init, _transfer, _chain_transfer);
+    set_helper(_helper);
   }
 
-  void set_pins(const int16_t SCK, const int16_t MOSI, const int16_t MISO, const int16_t RESET, const int16_t BUSYN);
+  void set_pins(const _pin_t SCK, const _pin_t MOSI, const _pin_t MISO, const _pin_t RESET, const _pin_t BUSYN);
   void set_chain_info(const uint8_t axis_index, const uint8_t position);
 
   void setMicroSteps(int16_t microSteps);
@@ -390,19 +388,17 @@ private:
   uint32_t SpdCalc(const float stepsPerSec);
   uint32_t Param(uint32_t value, const uint8_t bit_len);
   uint8_t Xfer(uint8_t data);
-  uint8_t Xfer(uint8_t data, int16_t ss_pin, uint8_t position);
+  uint8_t Xfer(uint8_t data, _pin_t ss_pin, uint8_t position);
 
   static inline void spi_init_noop() { }
-  static inline uint8_t transfer_noop(uint8_t data, const int16_t ss_pin) { }
-  static inline uint8_t chain_transfer_noop(uint8_t data, const int16_t ss_pin, const uint8_t chain_position) { }
+  static inline uint8_t transfer_noop(uint8_t data, const _pin_t ss_pin) { }
+  static inline uint8_t chain_transfer_noop(uint8_t data, const _pin_t ss_pin, const uint8_t chain_position) { }
 };
 
 class L6470 : public L64XX {
 public:
-  L6470(const int16_t ss_pin) { init(ss_pin); }
-  L6470(const int16_t ss_pin, spi_init_handler_t _spi_init, transfer_handler_t _transfer, chain_transfer_handler_t _chain_transfer) {
-    init(ss_pin, _spi_init, _transfer, _chain_transfer);
-  }
+  L6470(const _pin_t ss_pin) { init(ss_pin); }
+  L6470(const _pin_t ss_pin, L64XXHelper &_helper) { init(ss_pin, _helper); }
 };
 
 class L6480_Base : public L64XX {
@@ -425,10 +421,8 @@ public:
 
 class L6480 : public L6480_Base {
 public:
-  L6480(const int16_t ss_pin) { init(ss_pin); }
-  L6480(const int16_t ss_pin, spi_init_handler_t _spi_init, transfer_handler_t _transfer, chain_transfer_handler_t _chain_transfer) {
-    init(ss_pin, _spi_init, _transfer, _chain_transfer);
-  }
+  L6480(const _pin_t ss_pin) { init(ss_pin); }
+  L6480(const _pin_t ss_pin, L64XXHelper &_helper) { init(ss_pin, _helper); }
 
   static constexpr uint8_t OCD_TH_MAX = 31;
   static constexpr uint8_t STALL_TH_MAX = 31;
@@ -440,10 +434,8 @@ public:
 
 class powerSTEP01 : public L6480_Base {
 public:
-  powerSTEP01(const int16_t ss_pin) { init(ss_pin); }
-  powerSTEP01(const int16_t ss_pin, spi_init_handler_t _spi_init, transfer_handler_t _transfer, chain_transfer_handler_t _chain_transfer) {
-    init(ss_pin, _spi_init, _transfer, _chain_transfer);
-  }
+  powerSTEP01(const _pin_t ss_pin) { init(ss_pin); }
+  powerSTEP01(const _pin_t ss_pin, L64XXHelper &_helper) { init(ss_pin, _helper); }
 
   static constexpr uint8_t OCD_TH_MAX = 31;
   static constexpr uint8_t STALL_TH_MAX = 31;
