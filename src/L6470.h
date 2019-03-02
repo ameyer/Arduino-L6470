@@ -1,29 +1,45 @@
-////////////////////////////////////////////////////////////
-//ORIGINAL CODE 12/12/2011- Mike Hord, SparkFun Electronics
-//LIBRARY Created by Adam Meyer of bildr Aug 18th 2012
-//Released as MIT license
-////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+//                                                                //
+// ORIGINAL CODE 12 Dec 2011 Mike Hord, SparkFun Electronics      //
+//                                                                //
+// LIBRARY Created by Adam Meyer (@ameyer) of bildr 18 Aug 2012   //
+//   Released as MIT license                                      //
+//                                                                //
+//   Changes:                                                     //
+//     Scott Lahteine (@thinkyhead) - Cleanup       06 Mar 2018   //
+//     Bob Kuhn (@bob-the-kuhn)     - Chain / SPI   06 Jan 2019   //
+//     Scott Lahteine (@thinkyhead) - L64XXHelper   01 Mar 2019   //
+//                                                                //
+////////////////////////////////////////////////////////////////////
+
+#pragma once
 
 #ifndef _L6470_H_
 #define _L6470_H_
 
-#include <Arduino.h>
-#include <SPI.h>
+/**
+ * This library is aimed at the L6470 but it also can be used
+ * for other L647x devices, L648x devices and the powerSTEP01.
+ *
+ * Page numbers are for the L6470 data sheet.
+ */
 
-#define L6470_LIBRARY_VERSION 0x000602
+#include <Arduino.h>
+
+#define L6470_LIBRARY_VERSION 0x000700
 
 //#define SCK    10  // Wire this to the CSN pin
 //#define MOSI   11  // Wire this to the SDI pin
 //#define MISO   12  // Wire this to the SDO pin
 //#define SS_PIN 16  // Wire this to the CK pin
-#define RESET   6  // Wire this to the STBY line
-#define BUSYN   4  // Wire this to the BSYN line
+#define PIN_RESET   6  // Wire this to the STBY line
+#define PIN_BUSYN   4  // Wire this to the BSYN line
 
 #define STAT1    14  // Hooked to an LED on the test jig
 #define STAT2    15  // Hooked to an LED on the test jig
 #define SWITCH    8  // Hooked to the switch input and a pB on the jig
 
-// Constant definitions for overcurrent thresholds. Write these values to
+// Constant definitions for L6470 overcurrent thresholds. Write these values to
 //  register dSPIN_OCD_TH to set the level at which an overcurrent even occurs.
 #define OCD_TH_375mA  0x00
 #define OCD_TH_750mA  0x01
@@ -87,7 +103,7 @@
 #define ALARM_EN_SW_TURN_ON        0x40
 #define ALARM_EN_WRONG_NPERF_CMD   0x80
 
-// L6470_CONFIG register renames.
+// L64XX_CONFIG register renames.
 
 // Oscillator options.
 // The dSPIN needs to know what the clock frequency is because it uses that for some
@@ -111,24 +127,43 @@
 #define CONFIG_SW_MODE                 0x0010 // Mask for this bit.
 #define CONFIG_SW_HARD_STOP            0x0000 // Default; hard stop motor on switch.
 #define CONFIG_SW_USER                 0x0010 // Tie to the GoUntil and ReleaseSW
-                                                    //  commands to provide jog function.
-                                                    //  See page 25 of datasheet.
+                                              //  commands to provide jog function.
+                                              //  See page 25 of datasheet.
 
 // Configure the motor voltage compensation mode (see page 34 of datasheet)
-#define CONFIG_EN_VSCOMP               0x0020  // Mask for this bit.
-#define CONFIG_VS_COMP_DISABLE         0x0000  // Disable motor voltage compensation.
-#define CONFIG_VS_COMP_ENABLE          0x0020  // Enable motor voltage compensation.
+#define CONFIG_EN_VSCOMP               0x0020 // Mask for this bit.
+#define CONFIG_VS_COMP_DISABLE         0x0000 // Disable motor voltage compensation.
+#define CONFIG_VS_COMP_ENABLE          0x0020 // Enable motor voltage compensation.
 
 // Configure overcurrent detection event handling
-#define CONFIG_OC_SD                   0x0080  // Mask for this bit.
-#define CONFIG_OC_SD_DISABLE           0x0000  // Bridges do NOT shutdown on OC detect
-#define CONFIG_OC_SD_ENABLE            0x0080  // Bridges shutdown on OC detect
+#define CONFIG_OC_SD                   0x0080 // Mask for this bit.
+#define CONFIG_OC_SD_DISABLE           0x0000 // Bridges do NOT shutdown on OC detect
+#define CONFIG_OC_SD_ENABLE            0x0080 // Bridges shutdown on OC detect
 
 // Configure the slew rate of the power bridge output
-#define CONFIG_POW_SR                  0x0300  // Mask for this bit field.
-#define CONFIG_SR_180V_us              0x0000  // 180V/us
-#define CONFIG_SR_290V_us              0x0200  // 290V/us
-#define CONFIG_SR_530V_us              0x0300  // 530V/us
+// L6470
+#define CONFIG_POW_SR                  0x0300 // Mask for this bit field.
+#define CONFIG_POW_SR_BIT              8      // starting bit of this field
+#define CONFIG_SR_320V_us              0x0000 // 320V/us
+#define CONFIG_SR_75V_us               0x0100 // 75V/us
+#define CONFIG_SR_110V_us              0x0200 // 110V/us
+#define CONFIG_SR_260V_us              0x0300 // 260V/us
+
+// L6480 & powerSTEP01
+#define CONFIG1_SR                     0x00FF // Mask for this bit field.
+#define CONFIG1_SR_220V_us             0x006C
+#define CONFIG1_SR_400V_us             0x0087
+#define CONFIG1_SR_520V_us             0x00A6
+#define CONFIG1_SR_980V_us             0x00E2
+#define CONFIG2_SR_220V_us             0x10
+#define CONFIG2_SR_400V_us             0x10
+#define CONFIG2_SR_520V_us             0x10
+#define CONFIG2_SR_980V_us             0x30
+
+
+// L6480 & powerSTEP01 VCC setting
+#define PWR_VCC_7_5V                   0
+#define PWR_VCC_15V                    0x0100
 
 // Integer divisors for PWM sinewave generation
 //  See page 32 of the datasheet for more information on this.
@@ -158,18 +193,10 @@
 #define STATUS_BUSY                    0x0002 // mirrors BUSY pin
 #define STATUS_SW_F                    0x0004 // low when switch open, high when closed
 #define STATUS_SW_EVN                  0x0008 // active high, set on switch falling edge,
-                                                    //  cleared by reading L6470_STATUS
+                                              //  cleared by reading L64XX_STATUS
 #define STATUS_DIR                     0x0010 // Indicates current motor direction.
-                                                    //  High is dSPIN_FWD, Low is dSPIN_REV.
-#define STATUS_NOTPERF_CMD             0x0080 // Last command not performed.
-#define STATUS_WRONG_CMD               0x0100 // Last command not valid.
-#define STATUS_UVLO                    0x0200 // Undervoltage lockout is active
-#define STATUS_TH_WRN                  0x0400 // Thermal warning
-#define STATUS_TH_SD                   0x0800 // Thermal shutdown
-#define STATUS_OCD                     0x1000 // Overcurrent detected
-#define STATUS_STEP_LOSS_A             0x2000 // Stall detected on A bridge
-#define STATUS_STEP_LOSS_B             0x4000 // Stall detected on B bridge
-#define STATUS_SCK_MOD                 0x8000 // Step clock mode is active
+                                              //  High is dSPIN_FWD, Low is dSPIN_REV.
+
 
 // Status register motor status field
 #define STATUS_MOT_STATUS                0x0060      // field mask
@@ -203,8 +230,16 @@
 #define L6470_STALL_TH        0x14
 #define L6470_STEP_MODE       0x16
 #define L6470_ALARM_EN        0x17
-#define L6470_CONFIG          0x18
-#define L6470_STATUS          0x19
+#define L6470_GATECFG1        0x18  // L6480 & powerSTEP01 only
+#define L6470_GATECFG2        0x19  // L6480 & powerSTEP01 only
+
+#define PWR_TVAL_HOLD         0X09  // powerSTEP01 current mode register names
+#define PWR_TVAL_RUN          0X0A
+#define PWR_TVAL_ACC          0X0B
+#define PWR_TVAL_DEC          0X0C
+#define PWR_T_FAST            0X0E
+#define PWR_TON_MIN           0X0F
+#define PWR_TOFF_MIN          0X10
 
 // dSPIN commands
 #define dSPIN_NOP             0x00
@@ -235,29 +270,67 @@
 #define dSPIN_ACTION_RESET    0x00
 #define dSPIN_ACTION_COPY     0x01
 
-class L6470 {
+typedef uint16_t _pin_t;
 
-  public:
+class L64XXHelper {
+protected:
+  friend class L64XX;
+  friend class L6470;
+  friend class L6480;
+  friend class powerSTEP01;
+  static inline void spi_init() { }
+  static inline uint8_t transfer(uint8_t data, const _pin_t ss_pin) { return 0; }
+  static inline uint8_t transfer(uint8_t data, const _pin_t ss_pin, const uint8_t chain_position) { return 0; }
+};
 
-  L6470(const int SSPin);  // TODO: Configurable SPI pins
+extern L64XXHelper nullHelper;
+
+class L64XX {
+public:
+  _pin_t  pin_SS    = -1,
+          pin_SCK   = -1,
+          pin_MOSI  = -1,
+          pin_MISO  = -1,
+          pin_RESET = -1,
+          pin_BUSYN = -1;
+
+  static uint8_t chain[21];
+   // [0] - number of drivers in chain
+   // [1]... axis index for first device in the chain (closest to MOSI)
+
+  uint8_t axis_index;
+  uint8_t position = 0;  // 0 - not part of a chain
+
+  // This object must be supplied by the client
+  static L64XXHelper *helper;
+
+  static inline void set_helper(L64XXHelper *_helper) { helper = _helper; }
 
   void init();
 
-  void setMicroSteps(int microSteps);
-  void setCurrent(const int current); // NOT IMPLEMENTED
-  void setMaxSpeed(const int speed);
-  void setMinSpeed(const int speed);
+  inline void init(const _pin_t ss_pin) { pin_SS = ss_pin; }
+  inline void init(const _pin_t ss_pin, L64XXHelper *_helper) {
+    pin_SS = ss_pin;
+    set_helper(_helper);
+  }
+
+  void set_pins(const _pin_t SCK, const _pin_t MOSI, const _pin_t MISO, const _pin_t RESET, const _pin_t BUSYN);
+  void set_chain_info(const uint8_t axis_index, const uint8_t position);
+
+  void setMicroSteps(int16_t microSteps);
+  void setMaxSpeed(const int16_t speed);
+  void setMinSpeed(const int16_t speed);
   void setAcc(const float acceleration);
   void setDec(const float deceleration);
-  void setOverCurrent(unsigned int ma_current);
+  void setOverCurrent(float ma_current);
   void setThresholdSpeed(const float threshold);
   void setStallCurrent(float ma_current);
 
-  unsigned long ParamHandler(const byte param, const unsigned long value);
+  uint32_t ParamHandler(const uint8_t param, const uint32_t value);
   void SetLowSpeedOpt(boolean enable);
 
-  void run(const byte dir, const float spd);
-  void Step_Clock(const byte dir);
+  void run(const uint8_t dir, const float spd);
+  void Step_Clock(const uint8_t dir);
 
   void goHome();
   void setAsHome();
@@ -265,12 +338,12 @@ class L6470 {
   void goMark();
   void move(const long n_step);
   void goTo(long pos);
-  void goTo_DIR(const byte dir, long pos);
-  void goUntil(const byte act, const byte dir, unsigned long spd);
+  void goTo_DIR(const uint8_t dir, long pos);
+  void goUntil(const uint8_t act, const uint8_t dir, uint32_t spd);
 
   boolean isBusy();
 
-  void releaseSW(const byte act, const byte dir);
+  void releaseSW(const uint8_t act, const uint8_t dir);
 
   float getSpeed();
   long getPos();
@@ -283,26 +356,102 @@ class L6470 {
   void hardStop();
   void softFree();
   void free();
-  int getStatus();
+  int16_t getStatus();
 
-  private:
+  void SetParam(const uint8_t param, const uint32_t value);
+  uint32_t GetParam(const uint8_t param);
 
-  long convert(unsigned long val);
+  // L6470 placeholders may be overridden by sub-classes
+  static constexpr uint8_t OCD_TH_MAX = 15;
+  static constexpr uint8_t STALL_TH_MAX = 127;
+  static constexpr float OCD_CURRENT_CONSTANT_INV = 375;                             //  mA per count
+  static constexpr float OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;    //  counts per mA
+  static constexpr float STALL_CURRENT_CONSTANT_INV = 31.25;                         //  mA per count
+  static constexpr float STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV; //  counts per mA
 
-  void SetParam(const byte param, const unsigned long value);
-  unsigned long GetParam(const byte param);
+  static constexpr uint8_t L64XX_CONFIG         = 0x18;
+  static constexpr uint8_t L64XX_STATUS         = 0x19;
 
-  unsigned long AccCalc(const float stepsPerSecPerSec);
-  unsigned long DecCalc(const float stepsPerSecPerSec);
-  unsigned long MaxSpdCalc(const float stepsPerSec);
-  unsigned long MinSpdCalc(const float stepsPerSec);
-  unsigned long FSCalc(const float stepsPerSec);
-  unsigned long IntSpdCalc(const float stepsPerSec);
-  unsigned long SpdCalc(const float stepsPerSec);
-  unsigned long Param(unsigned long value, const byte bit_len);
-  byte Xfer(byte data);
+  static constexpr bool L6470_status_layout     = true;
+  static constexpr uint16_t STATUS_NOTPERF_CMD  = 0x0080; // Last command not performed.
+  static constexpr uint16_t STATUS_WRONG_CMD    = 0x0100; // Last command not valid.
+  static constexpr uint16_t STATUS_CMD_ERR      = 0x0180; // Command error
+  static constexpr uint16_t STATUS_UVLO         = 0x0200; // Undervoltage lockout is active
+  static constexpr uint16_t STATUS_TH_WRN       = 0x0400; // Thermal warning
+  static constexpr uint16_t STATUS_TH_SD        = 0x0800; // Thermal shutdown
+  static constexpr uint16_t STATUS_OCD          = 0x1000; // Overcurrent detected
+  static constexpr uint16_t STATUS_STEP_LOSS_A  = 0x2000; // Stall detected on A bridge
+  static constexpr uint16_t STATUS_STEP_LOSS_B  = 0x4000; // Stall detected on B bridge
+  static constexpr uint16_t STATUS_SCK_MOD      = 0x8000; // Step clock mode is active
 
-  int _SSPin;
+private:
+  long convert(uint32_t val);
+
+  uint32_t AccCalc(const float stepsPerSecPerSec);
+  uint32_t DecCalc(const float stepsPerSecPerSec);
+  uint32_t MaxSpdCalc(const float stepsPerSec);
+  uint32_t MinSpdCalc(const float stepsPerSec);
+  uint32_t FSCalc(const float stepsPerSec);
+  uint32_t IntSpdCalc(const float stepsPerSec);
+  uint32_t SpdCalc(const float stepsPerSec);
+  uint32_t Param(uint32_t value, const uint8_t bit_len);
+  uint8_t Xfer(uint8_t data);
+  uint8_t Xfer(uint8_t data, _pin_t ss_pin, uint8_t position);
+};
+
+class L6470 : public L64XX {
+public:
+  L6470(const _pin_t ss_pin) { init(ss_pin); }
+  L6470(const _pin_t ss_pin, L64XXHelper *_helper) { init(ss_pin, _helper); }
+};
+
+class L6480_Base : public L64XX {
+public:
+  static constexpr uint8_t L64XX_CONFIG         = 0x1A;
+  static constexpr uint8_t L64XX_STATUS         = 0x1B;
+
+  static constexpr bool L6470_status_layout = false;
+  static constexpr uint16_t STATUS_WRONG_CMD    = 0x0080; // Last command not valid.
+  static constexpr uint16_t STATUS_CMD_ERR      = 0x0080; // Command error
+  static constexpr uint16_t STATUS_UVLO         = 0x0200; // Undervoltage lockout is active
+  static constexpr uint16_t UVLO_ADC            = 0x0400; // ADC undervoltage event
+  static constexpr uint16_t STATUS_TH_WRN       = 0x0800; // Thermal warning
+  static constexpr uint16_t STATUS_TH_SD        = 0x1000; // Thermal shutdown
+  static constexpr uint16_t STATUS_OCD          = 0x2000; // Overcurrent detected
+  static constexpr uint16_t STATUS_STEP_LOSS_A  = 0x4000; // Stall detected on A bridge
+  static constexpr uint16_t STATUS_STEP_LOSS_B  = 0x8000; // Stall detected on B bridge
+  static constexpr uint16_t STATUS_SCK_MOD      = 0x0100; // Step clock mode is active
+};
+
+class L6480 : public L6480_Base {
+public:
+  L6480(const _pin_t ss_pin) { init(ss_pin); }
+  L6480(const _pin_t ss_pin, L64XXHelper *_helper) { init(ss_pin, _helper); }
+
+  static constexpr uint8_t OCD_TH_MAX = 31;
+  static constexpr uint8_t STALL_TH_MAX = 31;
+  static constexpr float OCD_CURRENT_CONSTANT_INV = 31.25;                           //  mA per count
+  static constexpr float OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;   //  counts per mA
+  static constexpr float STALL_CURRENT_CONSTANT_INV = 31.25;                         //  mA per count
+  static constexpr float STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV; //  counts per mA
+};
+
+class powerSTEP01 : public L6480_Base {
+public:
+  powerSTEP01(const _pin_t ss_pin) { init(ss_pin); }
+  powerSTEP01(const _pin_t ss_pin, L64XXHelper *_helper) { init(ss_pin, _helper); }
+
+  static constexpr uint8_t OCD_TH_MAX = 31;
+  static constexpr uint8_t STALL_TH_MAX = 31;
+  static constexpr float OCD_CURRENT_CONSTANT       = 0.001;                                    //  counts per mA (empirically derived for powerSTEP01)
+  static constexpr float OCD_CURRENT_CONSTANT_INV   = 1000;                                     //  mA per count  (empirically derived for powerSTEP01)
+  static constexpr float STALL_CURRENT_CONSTANT     = 0.005;                                    //  counts per mA (empirically derived for powerSTEP01)
+  static constexpr float STALL_CURRENT_CONSTANT_INV = 200;                                      //  mA per count  (empirically derived for powerSTEP01)
+  //static constexpr float POWERSTEP_AVERAGE_RDS = 0.016;                                       //  Ohms - L648x use external FETs so this may be user modified
+  //static constexpr float OCD_CURRENT_CONSTANT = (POWERSTEP_AVERAGE_RDS/0.03125)/1000;         //  counts per mA (calc per data sheet - definitely wrong)
+  //static constexpr float OCD_CURRENT_CONSTANT_INV = (1000 * 0.03125)/(POWERSTEP_AVERAGE_RDS); //  mA per count  (calc per data sheet - definitely wrong)
+  //static constexpr float STALL_CURRENT_CONSTANT = OCD_CURRENT_CONSTANT;                       //  counts per mA (calc per data sheet - definitely wrong)
+  //static constexpr float STALL_CURRENT_CONSTANT_INV = OCD_CURRENT_CONSTANT_INV;               //  mA per count  (calc per data sheet - definitely wrong)
 };
 
 #endif // _L6470_H_
