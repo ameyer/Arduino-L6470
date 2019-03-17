@@ -50,7 +50,7 @@ void L64XX::init() {
   //   - SYNC_SEL_x is the ratio of (micro)steps to toggles on the
   //     BUSY/SYNC pin (when that pin is used for SYNC). Make it 1:1, despite
   //     not using that pin.
-  //SetParam(L6470_STEP_MODE, !SYNC_EN | STEP_SEL_1 | SYNC_SEL_1);
+  //SetParam(L6470_STEP_MODE, BUSY_EN | STEP_SEL_1 | SYNC_SEL_1);
 
   // Set up the L64XX_CONFIG register as follows:
   //  PWM frequency divisor = 1
@@ -133,12 +133,12 @@ void L64XX::set_pins(const _pin_t sck, const _pin_t mosi, const _pin_t miso, con
 boolean L64XX::isBusy() { return !(getStatus() & 0x0002); }
 
 void L64XX::setMicroSteps(int16_t microSteps) {
-  uint8_t stepVal;
-  for (stepVal = 0; stepVal < 8; stepVal++) {
+  uint8_t stepSel;
+  for (stepSel = 0; stepSel < 8; stepSel++) {
     if (microSteps == 1) break;
     microSteps >>= 1;
   }
-  SetParam(L6470_STEP_MODE, !SYNC_EN | stepVal | SYNC_SEL_1);
+  SetParam(L6470_STEP_MODE, BUSY_EN | SYNC_SEL_1 | stepSel);
 }
 
 // Configure the L6470_FS_SPD register- this is the speed at which the driver ceases
