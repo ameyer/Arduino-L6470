@@ -75,6 +75,7 @@
 //  SYNC_SEL bits below.
 #define STEP_MODE_SYNC_EN  0x80  // Mask for this bit
 #define SYNC_EN 0x80
+#define BUSY_EN 0x00
 
 // ...last, define the SYNC_SEL modes. The clock output is defined by
 //  the full-step frequency and the value in these bits- see the datasheet
