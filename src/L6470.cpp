@@ -447,7 +447,6 @@ uint32_t L64XX::Param(uint32_t value, const uint8_t bit_len) {
 uint8_t L64XX::Xfer(uint8_t data) {
 
   if (pin_SCK < 0) {                                      // External SPI
-
     return (uint8_t) (
       position ? chain_transfer(data, pin_SS, position) // ... in a chain
                : transfer(data, pin_SS)                 // ... not chained

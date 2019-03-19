@@ -292,18 +292,14 @@ public:
   uint8_t axis_index;
   uint8_t position = 0;  // 0 - not part of a chain
 
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
   // These methods must be supplied by the client
 
+
   typedef void (*spi_init_handler_t)();
   typedef uint8_t (*transfer_handler_t)(uint8_t data, const int16_t ss_pin);
   typedef uint8_t (*chain_transfer_handler_t)(uint8_t data, const int16_t ss_pin, const uint8_t chain_position);
-
-//  uint8_t *chain_transfer_dummy(uint8_t data, const int16_t ss_pin, const uint8_t chain_position) {return 0;}
-//  uint8_t *transfer_dummy(uint8_t data, const int16_t ss_pin){return 0;}
-//  void *spi_init_dummy() {}
 
   chain_transfer_handler_t chain_transfer = chain_transfer_dummy;
   transfer_handler_t transfer = transfer_dummy;
@@ -319,7 +315,6 @@ public:
     set_chain_transfer_handler(_chain_transfer);
   }
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -329,6 +324,7 @@ public:
   inline void init(const _pin_t ss_pin) { pin_SS = ss_pin; }
 
   void set_pins(const _pin_t SCK, const _pin_t MOSI, const _pin_t MISO, const _pin_t RESET, const _pin_t BUSYN);
+
   void set_chain_info(const uint8_t axis_index, const uint8_t position);
 
   void setMicroSteps(int16_t microSteps);
@@ -529,6 +525,7 @@ public:
   //powerSTEP01::OCD_CURRENT_CONSTANT_INV = (1000 * 0.03125)/(POWERSTEP_AVERAGE_RDS); //  mA per count  (calc per data sheet - definitely wrong)
   //powerSTEP01::STALL_CURRENT_CONSTANT = OCD_CURRENT_CONSTANT;                       //  counts per mA (calc per data sheet - definitely wrong)
   //powerSTEP01::STALL_CURRENT_CONSTANT_INV = OCD_CURRENT_CONSTANT_INV;               //  mA per count  (calc per data sheet - definitely wrong)
+
 };
 
 #endif // _L6470_H_
