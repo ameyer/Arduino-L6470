@@ -8,7 +8,7 @@
 //   Changes:                                                     //
 //     Scott Lahteine (@thinkyhead) - Cleanup       06 Mar 2018   //
 //     Bob Kuhn (@bob-the-kuhn)     - Chain / SPI   06 Jan 2019   //
-//     Scott Lahteine (@thinkyhead) - Handlers      01 Mar 2019   //
+//     Scott Lahteine (@thinkyhead) - L64XXHelper   01 Mar 2019   //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
 
@@ -270,11 +270,30 @@
 
 typedef int16_t _pin_t;
 
+typedef void (*spi_init_handler_t)();
+typedef uint8_t (*transfer_handler_t)(uint8_t data, const int16_t ss_pin);
+typedef uint8_t (*chain_transfer_handler_t)(uint8_t data, const int16_t ss_pin, const uint8_t chain_position);
 
 uint8_t chain_transfer_dummy(uint8_t data, const int16_t ss_pin, const uint8_t chain_position);
 uint8_t transfer_dummy(uint8_t data, const int16_t ss_pin);
 void spi_init_dummy();
 
+
+class L64XXHelper {
+//protected:
+public:
+  friend class L64XX;
+  friend class L6470;
+  friend class L6480;
+  friend class powerSTEP01;
+  static inline void spi_init() { }
+  static inline uint8_t transfer(uint8_t data, const _pin_t ss_pin) { return 0; }
+  static inline uint8_t transfer(uint8_t data, const _pin_t ss_pin, const uint8_t chain_position) { return 0; }
+  static inline uint8_t transfer_single(uint8_t data, const _pin_t ss_pin) { return 0; }
+  static inline uint8_t transfer_chain(uint8_t data, const _pin_t ss_pin, const uint8_t chain_position) { return 0; }
+};
+
+extern L64XXHelper nullHelper;
 
 class L64XX {
 public:
@@ -292,14 +311,14 @@ public:
   uint8_t axis_index;
   uint8_t position = 0;  // 0 - not part of a chain
 
+  // This object must be supplied by the client
+  static L64XXHelper *helper;
+
+  static inline void set_helper(L64XXHelper *_helper) { helper = _helper; }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
   // These methods must be supplied by the client
-
-
-  typedef void (*spi_init_handler_t)();
-  typedef uint8_t (*transfer_handler_t)(uint8_t data, const int16_t ss_pin);
-  typedef uint8_t (*chain_transfer_handler_t)(uint8_t data, const int16_t ss_pin, const uint8_t chain_position);
 
   chain_transfer_handler_t chain_transfer = chain_transfer_dummy;
   transfer_handler_t transfer = transfer_dummy;
@@ -315,6 +334,7 @@ public:
     set_chain_transfer_handler(_chain_transfer);
   }
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -322,9 +342,12 @@ public:
   void init();
 
   inline void init(const _pin_t ss_pin) { pin_SS = ss_pin; }
+  inline void init(const _pin_t ss_pin, L64XXHelper *_helper) {
+    pin_SS = ss_pin;
+    set_helper(_helper);
+  }
 
   void set_pins(const _pin_t SCK, const _pin_t MOSI, const _pin_t MISO, const _pin_t RESET, const _pin_t BUSYN);
-
   void set_chain_info(const uint8_t axis_index, const uint8_t position);
 
   void setMicroSteps(int16_t microSteps);
@@ -446,6 +469,36 @@ public:
 
     L6470::UVLO_ADC            = 0x0400;                                               // ADC undervoltage event
   }
+
+  L6470(const _pin_t ss_pin, L64XXHelper *_helper) {
+    init(ss_pin, _helper);
+
+    L6470::OCD_TH_MAX = 15;
+    L6470::STALL_TH_MAX = 127;
+    L6470::OCD_CURRENT_CONSTANT_INV = 375;                                             //  mA per count
+    L6470::OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;                     //  counts per mA
+    L6470::STALL_CURRENT_CONSTANT_INV = 31.25;                                         //  mA per count
+    L6470::STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV;                 //  counts per mA
+
+    L6470::L64XX_CONFIG         = 0x18;
+    L6470::L64XX_STATUS         = 0x19;
+
+    L6470::L6470_status_layout = true;
+
+    L6470::STATUS_NOTPERF_CMD  = 0x0080;                                               // Last command not performed.
+    L6470::STATUS_WRONG_CMD    = 0x0100;                                               // Last command not valid.
+    L6470::STATUS_CMD_ERR      = 0x0180;                                               // Command error
+    L6470::STATUS_UVLO         = 0x0200;                                               // Undervoltage lockout is active
+    L6470::STATUS_TH_WRN       = 0x0400;                                               // Thermal warning
+    L6470::STATUS_TH_SD        = 0x0800;                                               // Thermal shutdown
+    L6470::STATUS_OCD          = 0x1000;                                               // Overcurrent detected
+    L6470::STATUS_STEP_LOSS_A  = 0x2000;                                               // Stall detected on A bridge
+    L6470::STATUS_STEP_LOSS_B  = 0x4000;                                               // Stall detected on B bridge
+    L6470::STATUS_SCK_MOD      = 0x0001;                                               // Step clock mode is active
+
+    L6470::UVLO_ADC            = 0x0400;                                               // ADC undervoltage event
+  }
+
 };
 
 class L6480_Base : public L64XX {
@@ -484,11 +537,41 @@ public:
     L6480::STATUS_SCK_MOD      = 0x0100;                                               // Step clock mode is active
   }
 
+  L6480(const _pin_t ss_pin, L64XXHelper *_helper) {
+    init(ss_pin, _helper);
+
+    L6480::OCD_TH_MAX = 31;
+    L6480::STALL_TH_MAX = 31;
+    L6480::OCD_CURRENT_CONSTANT_INV = 31.25;                                          //  mA per count
+    L6480::OCD_CURRENT_CONSTANT = 1.0f / L6480::OCD_CURRENT_CONSTANT_INV;             //  counts per mA
+    L6480::STALL_CURRENT_CONSTANT_INV = 31.25;                                        //  mA per count
+    L6480::STALL_CURRENT_CONSTANT = 1.0f / L6480::STALL_CURRENT_CONSTANT_INV;         //  counts per mA
+    L6480::L6470_status_layout = false;
+
+    L6480::L64XX_CONFIG         = 0x1A;
+    L6480::L64XX_STATUS         = 0x1B;
+
+    L6470_status_layout = false;
+
+    L6480::STATUS_WRONG_CMD    = 0x0080;                                              // Last command not valid.
+    L6480::STATUS_CMD_ERR      = 0x0080;                                              // Command error
+    L6480::STATUS_UVLO         = 0x0200;                                              // Undervoltage lockout is active
+    L6480::UVLO_ADC            = 0x0400;                                              // ADC undervoltage event
+    L6480::STATUS_TH_WRN       = 0x0800;                                              // Thermal warning
+    L6480::STATUS_TH_SD        = 0x1000;                                              // Thermal shutdown
+    L6480::STATUS_OCD          = 0x2000;                                              // Overcurrent detected
+    L6480::STATUS_STEP_LOSS_A  = 0x4000;                                              // Stall detected on A bridge
+    L6480::STATUS_STEP_LOSS_B  = 0x8000;                                              // Stall detected on B bridge
+    L6480::STATUS_SCK_MOD      = 0x0100;                                              // Step clock mode is active
+   }
+
   //static constexpr float L6480_AVERAGE_RDS = 0.016;                                 //  Ohms - L6480 use external FETs so this may be user modified
   //L6480::OCD_CURRENT_CONSTANT = (L6480_AVERAGE_RDS/0.03125)/1000;                   //  counts per mA (calc per data sheet - definitely wrong)
   //L6480::OCD_CURRENT_CONSTANT_INV = (1000 * 0.03125)/(L6480_AVERAGE_RDS);           //  mA per count  (calc per data sheet - definitely wrong)
   //L6480::STALL_CURRENT_CONSTANT = OCD_CURRENT_CONSTANT;                             //  counts per mA (calc per data sheet - definitely wrong)
   //L6480::STALL_CURRENT_CONSTANT_INV = OCD_CURRENT_CONSTANT_INV;                     //  mA per count  (calc per data sheet - definitely wrong)
+
+
 };
 
 class powerSTEP01 : public L6480_Base {
@@ -519,6 +602,34 @@ public:
     powerSTEP01::STATUS_STEP_LOSS_B  = 0x8000;                                        // Stall detected on B bridge
     powerSTEP01::STATUS_SCK_MOD      = 0x0100;                                        // Step clock mode is active
   }
+
+  powerSTEP01(const _pin_t ss_pin, L64XXHelper *_helper) {
+    init(ss_pin, _helper);
+
+    powerSTEP01::OCD_TH_MAX = 5;
+    powerSTEP01::STALL_TH_MAX = 5;
+    powerSTEP01::OCD_CURRENT_CONSTANT       = 0.001;                                  //  counts per mA (empirically derived for powerSTEP01)
+    powerSTEP01::OCD_CURRENT_CONSTANT_INV   = 1000;                                   //  mA per count  (empirically derived for powerSTEP01)
+    powerSTEP01::STALL_CURRENT_CONSTANT     = 0.005;                                  //  counts per mA (empirically derived for powerSTEP01)
+    powerSTEP01::STALL_CURRENT_CONSTANT_INV = 200;                                    //  mA per count  (empirically derived for powerSTEP01)
+
+    powerSTEP01::L64XX_CONFIG         = 0x1A;
+    powerSTEP01::L64XX_STATUS         = 0x1B;
+
+    powerSTEP01::L6470_status_layout = false;
+
+    powerSTEP01::STATUS_WRONG_CMD    = 0x0080;                                        // Last command not valid.
+    powerSTEP01::STATUS_CMD_ERR      = 0x0080;                                        // Command error
+    powerSTEP01::STATUS_UVLO         = 0x0200;                                        // Undervoltage lockout is active
+    powerSTEP01::UVLO_ADC            = 0x0400;                                        // ADC undervoltage event
+    powerSTEP01::STATUS_TH_WRN       = 0x0800;                                        // Thermal warning
+    powerSTEP01::STATUS_TH_SD        = 0x1000;                                        // Thermal shutdown
+    powerSTEP01::STATUS_OCD          = 0x2000;                                        // Overcurrent detected
+    powerSTEP01::STATUS_STEP_LOSS_A  = 0x4000;                                        // Stall detected on A bridge
+    powerSTEP01::STATUS_STEP_LOSS_B  = 0x8000;                                        // Stall detected on B bridge
+    powerSTEP01::STATUS_SCK_MOD      = 0x0100;                                        // Step clock mode is active
+   }
+
 
   //static constexpr float POWERSTEP_AVERAGE_RDS = 0.016;                             //  Ohms
   //powerSTEP01::OCD_CURRENT_CONSTANT = (POWERSTEP_AVERAGE_RDS/0.03125)/1000;         //  counts per mA (calc per data sheet - definitely wrong)

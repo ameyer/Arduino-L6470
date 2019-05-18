@@ -8,7 +8,7 @@
 //   Changes:                                                     //
 //     Scott Lahteine (@thinkyhead) - Cleanup       06 Mar 2018   //
 //     Bob Kuhn (@bob-the-kuhn)     - Chain / SPI   06 Jan 2019   //
-//     Scott Lahteine (@thinkyhead) - Handlers      01 Mar 2019   //
+//     Scott Lahteine (@thinkyhead) - L64XXHelper   01 Mar 2019   //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
 
@@ -16,11 +16,15 @@
 
 #include <Arduino.h>
 
-uint8_t chain_transfer_dummy(uint8_t data, const int16_t ss_pin, const uint8_t chain_position) {return 0;}
-uint8_t transfer_dummy(uint8_t data, const int16_t ss_pin){return 0;}
-void spi_init_dummy() {}
+L64XXHelper nullHelper;
+L64XXHelper* L64XX::helper = &nullHelper;
 
 uint8_t L64XX::chain[21];
+
+// stub routines
+uint8_t chain_transfer_dummy(uint8_t data, const int16_t ss_pin, const uint8_t chain_position) { return 0; }
+uint8_t transfer_dummy(uint8_t data, const int16_t ss_pin) { return 0; }
+void spi_init_dummy(){};
 
 // Generic init function to set up communication with the dSPIN chip.
 
@@ -36,7 +40,7 @@ void L64XX::init() {
   //  most significant bit first,
   //  SPI clock not to exceed 5MHz,
   //  SPI_MODE3 (clock idle high, latch data on rising edge of clock)
-  if (pin_SCK < 0) spi_init();  // Use external SPI init function to init it
+  if (pin_SCK < 0) helper->spi_init();  // Use external SPI init function to init it
                                        // internal SPI already initialized
 
   // First things first: let's check communications. The L64XX_CONFIG register should
@@ -446,34 +450,13 @@ uint32_t L64XX::Param(uint32_t value, const uint8_t bit_len) {
 
 uint8_t L64XX::Xfer(uint8_t data) {
 
-  if (pin_SCK < 0) {                                      // External SPI
+  if (pin_SCK < 0)                                      // External SPI
     return (uint8_t) (
       position ? chain_transfer(data, pin_SS, position) // ... in a chain
                : transfer(data, pin_SS)                 // ... not chained
     );
 
-//    return (uint8_t) (
-//      position ? chain_transfer(data, pin_SS, position) // ... in a chain
-//               : transfer(data, pin_SS)                 // ... not chained
-//    );
-
-//    if (position) return L64XXHelper->transfer_chain(data, pin_SS, position);
-//    else          return L64XXHelper->transfer_single(data, pin_SS);
-
-//    return uint8_t(
-//      position ? helper->transfer_chain(data, pin_SS, position)
-//               : helper->transfer_single(data, pin_SS)
-//    );
-  }
-
-
-//      position ? L6470_transfer(data, pin_SS, position)  // ... in a chain
-//               : L6470_transfer(data, pin_SS)            // ... not chained
-// ... in a chain
-// ... not chained
-
   // if pin_SCK is set use internal soft SPI.
-
   if (position == 0) {                            // Internal soft SPI, not in a chain
     if (pin_SS >= 0) digitalWrite(pin_SS, LOW);   // Allow external code to control SS_PIN
     uint8_t bits = 8;
