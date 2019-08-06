@@ -130,7 +130,7 @@ void L64XX::set_pins(const _pin_t sck, const _pin_t mosi, const _pin_t miso, con
   }
 }
 
-boolean L64XX::isBusy() { return !(getStatus() & 0x0002); }
+bool L64XX::isBusy() { return !(getStatus() & 0x0002); }
 
 void L64XX::setMicroSteps(int16_t microSteps) {
   uint8_t stepSel;
@@ -208,7 +208,7 @@ void L64XX::setStallCurrent(float ma_current) {
 //  When disabling, the value will have to be explicitly written by
 //  the user with a SetParam() call. See the datasheet for further
 //  information about low-speed optimization.
-void L64XX::SetLowSpeedOpt(const boolean enable) {
+void L64XX::SetLowSpeedOpt(const bool enable) {
   Xfer(dSPIN_SET_PARAM | L6470_MIN_SPEED);
   Param(enable ? 0x1000 : 0, 13);
 }
