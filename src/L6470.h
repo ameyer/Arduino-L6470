@@ -26,7 +26,7 @@
 
 #include <Arduino.h>
 
-#define L6470_LIBRARY_VERSION 0x000700
+#define L6470_LIBRARY_VERSION 0x000800
 
 //#define SCK    10  // Wire this to the CSN pin
 //#define MOSI   11  // Wire this to the SDI pin
@@ -123,6 +123,8 @@
 #define CONFIG_EXT_24MHZ_OSCOUT_INVERT 0x000E // External 24MHz crystal, output inverted
 #define CONFIG_EXT_32MHZ_OSCOUT_INVERT 0x000F // External 32MHz crystal, output inverted
 
+#define CONFIG_EN_TQREG                0x0020 // L6474 only - enable setting output slew rate
+
 // Configure the functionality of the external switch input
 #define CONFIG_SW_MODE                 0x0010 // Mask for this bit.
 #define CONFIG_SW_HARD_STOP            0x0000 // Default; hard stop motor on switch.
@@ -141,7 +143,7 @@
 #define CONFIG_OC_SD_ENABLE            0x0080 // Bridges shutdown on OC detect
 
 // Configure the slew rate of the power bridge output
-// L6470
+// L6470 & L6474
 #define CONFIG_POW_SR                  0x0300 // Mask for this bit field.
 #define CONFIG_POW_SR_BIT              8      // starting bit of this field
 #define CONFIG_SR_320V_us              0x0000 // 320V/us
@@ -185,6 +187,12 @@
 #define CONFIG_PWM_DIV_5               (0x04<<13)
 #define CONFIG_PWM_DIV_6               (0x05<<13)
 #define CONFIG_PWM_DIV_7               (0x06<<13)
+
+// status register layouts
+#define L6470_STATUS_LAYOUT            0x0000
+#define L6474_STATUS_LAYOUT            0x0001
+#define L6480_STATUS_LAYOUT            0x0003
+
 
 // Status register bit renames- read-only bits conferring information about the
 //  device to the user.
@@ -231,6 +239,8 @@
 #define L6470_GATECFG1        0x18  // L6480 & powerSTEP01 only
 #define L6470_GATECFG2        0x19  // L6480 & powerSTEP01 only
 
+#define L6474_TVAL            0x09  // L6474 only
+
 #define PWR_TVAL_HOLD         0X09  // powerSTEP01 current mode register names
 #define PWR_TVAL_RUN          0X0A
 #define PWR_TVAL_ACC          0X0B
@@ -256,6 +266,7 @@
 #define dSPIN_RESET_DEVICE    0xC0
 #define dSPIN_SOFT_STOP       0xB0
 #define dSPIN_HARD_STOP       0xB8
+#define dSPIN_L6474_ENABLE    dSPIN_HARD_STOP
 #define dSPIN_SOFT_HIZ        0xA0
 #define dSPIN_HARD_HIZ        0xA8
 #define dSPIN_GET_STATUS      0xD0
@@ -356,11 +367,12 @@ public:
   void setAcc(const float acceleration);
   void setDec(const float deceleration);
   void setOverCurrent(float ma_current);
+  void setTVALCurrent(float ma_current);
   void setThresholdSpeed(const float threshold);
   void setStallCurrent(float ma_current);
 
   uint32_t ParamHandler(const uint8_t param, const uint32_t value);
-  void SetLowSpeedOpt(boolean enable);
+  void SetLowSpeedOpt(uint8_t enable);
 
   void run(const uint8_t dir, const float spd);
   void Step_Clock(const uint8_t dir);
@@ -374,7 +386,7 @@ public:
   void goTo_DIR(const uint8_t dir, long pos);
   void goUntil(const uint8_t act, const uint8_t dir, uint32_t spd);
 
-  boolean isBusy();
+  uint8_t isBusy();
 
   void releaseSW(const uint8_t act, const uint8_t dir);
 
@@ -409,7 +421,7 @@ public:
   uint8_t L64XX_CONFIG;             // CONFIG register address
   uint8_t L64XX_STATUS;             // STATUS register address
 
-  bool L6470_status_layout;         // true: L6470 layout, false: L6480/powerSTEP01 layout
+  uint8_t L6470_status_layout;      // true: L6470 layout, false: L6480/powerSTEP01 layout
 
   // status bit locations
   uint16_t STATUS_NOTPERF_CMD;      // Last command not performed.
@@ -446,7 +458,7 @@ public:
     init(ss_pin);
     L6470::OCD_TH_MAX = 15;
     L6470::STALL_TH_MAX = 127;
-    L6470::OCD_CURRENT_CONSTANT_INV = 375;                                             //  mA per count
+    L6470::OCD_CURRENT_CONSTANT_INV = 375.0f;                                             //  mA per count
     L6470::OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;                     //  counts per mA
     L6470::STALL_CURRENT_CONSTANT_INV = 31.25;                                         //  mA per count
     L6470::STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV;                 //  counts per mA
@@ -454,7 +466,7 @@ public:
     L6470::L64XX_CONFIG         = 0x18;
     L6470::L64XX_STATUS         = 0x19;
 
-    L6470::L6470_status_layout = true;
+    L6470::L6470_status_layout = L6470_STATUS_LAYOUT;
 
     L6470::STATUS_NOTPERF_CMD  = 0x0080;                                               // Last command not performed.
     L6470::STATUS_WRONG_CMD    = 0x0100;                                               // Last command not valid.
@@ -475,7 +487,7 @@ public:
 
     L6470::OCD_TH_MAX = 15;
     L6470::STALL_TH_MAX = 127;
-    L6470::OCD_CURRENT_CONSTANT_INV = 375;                                             //  mA per count
+    L6470::OCD_CURRENT_CONSTANT_INV = 375.0f;                                             //  mA per count
     L6470::OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;                     //  counts per mA
     L6470::STALL_CURRENT_CONSTANT_INV = 31.25;                                         //  mA per count
     L6470::STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV;                 //  counts per mA
@@ -483,7 +495,7 @@ public:
     L6470::L64XX_CONFIG         = 0x18;
     L6470::L64XX_STATUS         = 0x19;
 
-    L6470::L6470_status_layout = true;
+    L6470::L6470_status_layout = L6470_STATUS_LAYOUT;
 
     L6470::STATUS_NOTPERF_CMD  = 0x0080;                                               // Last command not performed.
     L6470::STATUS_WRONG_CMD    = 0x0100;                                               // Last command not valid.
@@ -500,6 +512,70 @@ public:
   }
 
 };
+
+
+
+class L6474 : public L64XX {
+public:
+  L6474(const _pin_t ss_pin) {
+    init(ss_pin);
+    L6474::OCD_TH_MAX = 15;
+    L6474::STALL_TH_MAX = 127;                                                           //  STALL function not implemented on L6474
+    L6474::OCD_CURRENT_CONSTANT_INV = 375.0f;                                             //  mA per count
+    L6474::OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;                     //  counts per mA
+    L6474::STALL_CURRENT_CONSTANT_INV = 31.25;                                         //  mA per count
+    L6474::STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV;                 //  counts per mA
+
+    L6474::L64XX_CONFIG         = 0x18;
+    L6474::L64XX_STATUS         = 0x19;
+
+    L6474::L6470_status_layout = L6474_STATUS_LAYOUT;
+
+    L6474::STATUS_NOTPERF_CMD  = 0x0080;                                               // Last command not performed.
+    L6474::STATUS_WRONG_CMD    = 0x0100;                                               // Last command not valid
+    L6474::STATUS_CMD_ERR      = 0x0000;                                               // Command error - not implemented on L6474
+    L6474::STATUS_UVLO         = 0x0200;                                               // Undervoltage lockout is active
+    L6474::STATUS_TH_WRN       = 0x0400;                                               // Thermal warning
+    L6474::STATUS_TH_SD        = 0x0800;                                               // Thermal shutdown
+    L6474::STATUS_OCD          = 0x1000;                                               // Overcurrent detected
+    L6474::STATUS_STEP_LOSS_A  = 0x0000;                                               // Stall detected on A bridge - not implemented on L6474
+    L6474::STATUS_STEP_LOSS_B  = 0x0000;                                               // Stall detected on B bridge - not implemented on L6474
+    L6474::STATUS_SCK_MOD      = 0x0000;                                               // Step clock mode is active - not implemented on L6474
+
+    L6474::UVLO_ADC            = 0x0000;                                               // ADC undervoltage event - not implemented on L6474
+  }
+
+  L6474(const _pin_t ss_pin, L64XXHelper *_helper) {
+    init(ss_pin, _helper);
+
+    L6474::OCD_TH_MAX = 15;
+    L6474::STALL_TH_MAX = 127;
+    L6474::OCD_CURRENT_CONSTANT_INV = 375.0f;                                             //  mA per count
+    L6474::OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;                     //  counts per mA
+    L6474::STALL_CURRENT_CONSTANT_INV = 31.25;                                         //  mA per count
+    L6474::STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV;                 //  counts per mA
+
+    L6474::L64XX_CONFIG         = 0x18;
+    L6474::L64XX_STATUS         = 0x19;
+
+    L6474::L6470_status_layout = L6474_STATUS_LAYOUT;
+
+    L6474::STATUS_NOTPERF_CMD  = 0x0080;                                               // Last command not performed.
+    L6474::STATUS_WRONG_CMD    = 0x0100;                                               // Last command not valid
+    L6474::STATUS_CMD_ERR      = 0x0000;                                               // Command error - not implemented on L6474
+    L6474::STATUS_UVLO         = 0x0200;                                               // Undervoltage lockout is active
+    L6474::STATUS_TH_WRN       = 0x0400;                                               // Thermal warning
+    L6474::STATUS_TH_SD        = 0x0800;                                               // Thermal shutdown
+    L6474::STATUS_OCD          = 0x1000;                                               // Overcurrent detected
+    L6474::STATUS_STEP_LOSS_A  = 0x0000;                                               // Stall detected on A bridge - not implemented on L6474
+    L6474::STATUS_STEP_LOSS_B  = 0x0000;                                               // Stall detected on B bridge - not implemented on L6474
+    L6474::STATUS_SCK_MOD      = 0x0000;                                               // Step clock mode is active - not implemented on L6474
+
+    L6474::UVLO_ADC            = 0x0000;                                               // ADC undervoltage event - not implemented on L6474
+  }
+
+};
+
 
 class L6480_Base : public L64XX {
 public:
@@ -518,12 +594,12 @@ public:
     L6480::OCD_CURRENT_CONSTANT = 1.0f / L6480::OCD_CURRENT_CONSTANT_INV;              //  counts per mA
     L6480::STALL_CURRENT_CONSTANT_INV = 31.25;                                         //  mA per count
     L6480::STALL_CURRENT_CONSTANT = 1.0f / L6480::STALL_CURRENT_CONSTANT_INV;          //  counts per mA
-    L6480::L6470_status_layout = false;
+    L6480::L6470_status_layout = L6480_STATUS_LAYOUT;
 
     L6480::L64XX_CONFIG         = 0x1A;
     L6480::L64XX_STATUS         = 0x1B;
 
-    L6470_status_layout = false;
+    L6470_status_layout = L6480_STATUS_LAYOUT;
 
     L6480::STATUS_WRONG_CMD    = 0x0080;                                               // Last command not valid.
     L6480::STATUS_CMD_ERR      = 0x0080;                                               // Command error
@@ -546,12 +622,12 @@ public:
     L6480::OCD_CURRENT_CONSTANT = 1.0f / L6480::OCD_CURRENT_CONSTANT_INV;             //  counts per mA
     L6480::STALL_CURRENT_CONSTANT_INV = 31.25;                                        //  mA per count
     L6480::STALL_CURRENT_CONSTANT = 1.0f / L6480::STALL_CURRENT_CONSTANT_INV;         //  counts per mA
-    L6480::L6470_status_layout = false;
+    L6480::L6470_status_layout = L6480_STATUS_LAYOUT;
 
     L6480::L64XX_CONFIG         = 0x1A;
     L6480::L64XX_STATUS         = 0x1B;
 
-    L6470_status_layout = false;
+    L6470_status_layout = L6480_STATUS_LAYOUT;
 
     L6480::STATUS_WRONG_CMD    = 0x0080;                                              // Last command not valid.
     L6480::STATUS_CMD_ERR      = 0x0080;                                              // Command error
@@ -589,7 +665,7 @@ public:
     powerSTEP01::L64XX_CONFIG         = 0x1A;
     powerSTEP01::L64XX_STATUS         = 0x1B;
 
-    powerSTEP01::L6470_status_layout = false;
+    powerSTEP01::L6470_status_layout = L6480_STATUS_LAYOUT;
 
     powerSTEP01::STATUS_WRONG_CMD    = 0x0080;                                        // Last command not valid.
     powerSTEP01::STATUS_CMD_ERR      = 0x0080;                                        // Command error
@@ -616,7 +692,7 @@ public:
     powerSTEP01::L64XX_CONFIG         = 0x1A;
     powerSTEP01::L64XX_STATUS         = 0x1B;
 
-    powerSTEP01::L6470_status_layout = false;
+    powerSTEP01::L6470_status_layout = L6480_STATUS_LAYOUT;
 
     powerSTEP01::STATUS_WRONG_CMD    = 0x0080;                                        // Last command not valid.
     powerSTEP01::STATUS_CMD_ERR      = 0x0080;                                        // Command error
@@ -629,13 +705,6 @@ public:
     powerSTEP01::STATUS_STEP_LOSS_B  = 0x8000;                                        // Stall detected on B bridge
     powerSTEP01::STATUS_SCK_MOD      = 0x0100;                                        // Step clock mode is active
    }
-
-
-  //static constexpr float POWERSTEP_AVERAGE_RDS = 0.016;                             //  Ohms
-  //powerSTEP01::OCD_CURRENT_CONSTANT = (POWERSTEP_AVERAGE_RDS/0.03125)/1000;         //  counts per mA (calc per data sheet - definitely wrong)
-  //powerSTEP01::OCD_CURRENT_CONSTANT_INV = (1000 * 0.03125)/(POWERSTEP_AVERAGE_RDS); //  mA per count  (calc per data sheet - definitely wrong)
-  //powerSTEP01::STALL_CURRENT_CONSTANT = OCD_CURRENT_CONSTANT;                       //  counts per mA (calc per data sheet - definitely wrong)
-  //powerSTEP01::STALL_CURRENT_CONSTANT_INV = OCD_CURRENT_CONSTANT_INV;               //  mA per count  (calc per data sheet - definitely wrong)
 
 };
 

@@ -135,7 +135,7 @@ void L64XX::set_pins(const _pin_t sck, const _pin_t mosi, const _pin_t miso, con
   }
 }
 
-boolean L64XX::isBusy() { return !(getStatus() & 0x0002); }
+uint8_t L64XX::isBusy() { return !(getStatus() & 0x0002); }
 
 void L64XX::setMicroSteps(int16_t microSteps) {
   uint8_t stepVal;
@@ -143,7 +143,11 @@ void L64XX::setMicroSteps(int16_t microSteps) {
     if (microSteps == 1) break;
     microSteps >>= 1;
   }
-  SetParam(L6470_STEP_MODE, !SYNC_EN | stepVal | SYNC_SEL_1);
+
+  if (L6470_status_layout == L6474_STATUS_LAYOUT)
+      SetParam(L6470_STEP_MODE, 0x98 | stepVal);  //no sync
+    else
+      SetParam(L6470_STEP_MODE, (!SYNC_EN | SYNC_SEL_1 | stepVal));
 }
 
 // Configure the L6470_FS_SPD register- this is the speed at which the driver ceases
@@ -208,12 +212,20 @@ void L64XX::setStallCurrent(float ma_current) {
   SetParam(L6470_STALL_TH, STHValue < STALL_TH_MAX ? STHValue : STALL_TH_MAX);
 }
 
+// only in L6474
+//  NOTE - TVAL register address is the same as the KVAL_HOLD register on the other L64xx devices
+void L64XX::setTVALCurrent(float ma_current) {
+  if (ma_current > STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX +1)) ma_current = STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX +1);  // keep the STALL_TH calc from overflowing 8 bits
+  const uint8_t STHValue = (uint8_t)floor(uint8_t(ma_current * STALL_CURRENT_CONSTANT - 1));
+  SetParam(L6474_TVAL, STHValue < STALL_TH_MAX ? STHValue : STALL_TH_MAX);
+}
+
 // Enable or disable the low-speed optimization option. If enabling,
 //  the other 12 bits of the register will be automatically zero.
 //  When disabling, the value will have to be explicitly written by
 //  the user with a SetParam() call. See the datasheet for further
 //  information about low-speed optimization.
-void L64XX::SetLowSpeedOpt(const boolean enable) {
+void L64XX::SetLowSpeedOpt(const uint8_t enable) {
   Xfer(dSPIN_SET_PARAM | L6470_MIN_SPEED);
   Param(enable ? 0x1000 : 0, 13);
 }
