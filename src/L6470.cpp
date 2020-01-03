@@ -145,7 +145,10 @@ void L64XX::setMicroSteps(int16_t microSteps) {
   }
 
   if (L6470_status_layout == L6474_STATUS_LAYOUT)
+    {
+      if (stepVal > 4) stepVal = 4;  // 16 microsteps max on L6474
       SetParam(L6470_STEP_MODE, 0x98 | stepVal);  //no sync
+    }
     else
       SetParam(L6470_STEP_MODE, (!SYNC_EN | SYNC_SEL_1 | stepVal));
 }
