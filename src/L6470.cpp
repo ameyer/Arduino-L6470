@@ -150,7 +150,7 @@ void L64XX::setMicroSteps(int16_t microSteps) {
       SetParam(L6470_STEP_MODE, 0x98 | stepVal);  //no sync
     }
     else
-      SetParam(L6470_STEP_MODE, (!SYNC_EN | SYNC_SEL_1 | stepVal));
+      SetParam(L6470_STEP_MODE, ((!SYNC_EN) | SYNC_SEL_1 | stepVal));
 }
 
 // Configure the L6470_FS_SPD register- this is the speed at which the driver ceases
