@@ -222,7 +222,6 @@ void L64XX::setTVALCurrent(float ma_current) {
   const uint8_t STHValue = (uint8_t)floor(uint8_t(ma_current * STALL_CURRENT_CONSTANT - 1));
   SetParam(L6474_TVAL, STHValue < STALL_TH_MAX ? STHValue : STALL_TH_MAX);
 }
-
 // Enable or disable the low-speed optimization option. If enabling,
 //  the other 12 bits of the register will be automatically zero.
 //  When disabling, the value will have to be explicitly written by

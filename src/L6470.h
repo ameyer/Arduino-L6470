@@ -203,7 +203,6 @@
                                               //  cleared by reading L64XX_STATUS
 #define STATUS_DIR                     0x0010 // Indicates current motor direction.
                                               //  High is dSPIN_FWD, Low is dSPIN_REV.
-
 // Status register motor status field
 #define STATUS_MOT_STATUS                0x0060      // field mask
 #define STATUS_MOT_STATUS_STOPPED       (0x0000<<13) // Motor stopped
@@ -349,7 +348,6 @@ public:
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
   void init();
 
   inline void init(const _pin_t ss_pin) { pin_SS = ss_pin; }
@@ -385,7 +383,7 @@ public:
   void goTo(long pos);
   void goTo_DIR(const uint8_t dir, long pos);
   void goUntil(const uint8_t act, const uint8_t dir, uint32_t spd);
-
+  
   uint8_t isBusy();
 
   void releaseSW(const uint8_t act, const uint8_t dir);
@@ -580,7 +578,6 @@ public:
 class L6480_Base : public L64XX {
 public:
 
-
 };
 
 class L6480 : public L6480_Base {
@@ -646,7 +643,6 @@ public:
   //L6480::OCD_CURRENT_CONSTANT_INV = (1000 * 0.03125)/(L6480_AVERAGE_RDS);           //  mA per count  (calc per data sheet - definitely wrong)
   //L6480::STALL_CURRENT_CONSTANT = OCD_CURRENT_CONSTANT;                             //  counts per mA (calc per data sheet - definitely wrong)
   //L6480::STALL_CURRENT_CONSTANT_INV = OCD_CURRENT_CONSTANT_INV;                     //  mA per count  (calc per data sheet - definitely wrong)
-
 
 };
 
