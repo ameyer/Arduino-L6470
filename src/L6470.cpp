@@ -17,9 +17,14 @@
 #include <Arduino.h>
 
 L64XXHelper nullHelper;
-L64XXHelper& L64XX::helper = nullHelper;
+L64XXHelper* L64XX::helper = &nullHelper;
 
 uint8_t L64XX::chain[21];
+
+// stub routines
+uint8_t chain_transfer_dummy(uint8_t data, const int16_t ss_pin, const uint8_t chain_position) { return 0; }
+uint8_t transfer_dummy(uint8_t data, const int16_t ss_pin) { return 0; }
+void spi_init_dummy(){};
 
 // Generic init function to set up communication with the dSPIN chip.
 
@@ -35,7 +40,7 @@ void L64XX::init() {
   //  most significant bit first,
   //  SPI clock not to exceed 5MHz,
   //  SPI_MODE3 (clock idle high, latch data on rising edge of clock)
-  if (pin_SCK < 0) helper.spi_init();  // Use external SPI init function to init it
+  if (pin_SCK < 0) helper->spi_init();  // Use external SPI init function to init it
                                        // internal SPI already initialized
 
   // First things first: let's check communications. The L64XX_CONFIG register should
@@ -50,7 +55,7 @@ void L64XX::init() {
   //   - SYNC_SEL_x is the ratio of (micro)steps to toggles on the
   //     BUSY/SYNC pin (when that pin is used for SYNC). Make it 1:1, despite
   //     not using that pin.
-  //SetParam(L6470_STEP_MODE, !SYNC_EN | STEP_SEL_1 | SYNC_SEL_1);
+  //SetParam(L6470_STEP_MODE, BUSY_EN | STEP_SEL_1 | SYNC_SEL_1);
 
   // Set up the L64XX_CONFIG register as follows:
   //  PWM frequency divisor = 1
@@ -130,15 +135,21 @@ void L64XX::set_pins(const _pin_t sck, const _pin_t mosi, const _pin_t miso, con
   }
 }
 
-boolean L64XX::isBusy() { return !(getStatus() & 0x0002); }
+uint8_t L64XX::isBusy() { return !(getStatus() & 0x0002); }
 
 void L64XX::setMicroSteps(int16_t microSteps) {
-  uint8_t stepVal;
-  for (stepVal = 0; stepVal < 8; stepVal++) {
+  uint8_t stepSel;
+  for (stepSel = 0; stepSel < 8; stepSel++) {
     if (microSteps == 1) break;
     microSteps >>= 1;
   }
-  SetParam(L6470_STEP_MODE, !SYNC_EN | stepVal | SYNC_SEL_1);
+
+  if (L6470_status_layout == L6474_STATUS_LAYOUT) {
+    if (stepSel > 4) stepSel = 4;               // 16 microsteps max on L6474
+    SetParam(L6470_STEP_MODE, 0x98 | stepSel);  // NO SYNC
+  }
+  else
+    SetParam(L6470_STEP_MODE, BUSY_EN | SYNC_SEL_1 | stepSel);
 }
 
 // Configure the L6470_FS_SPD register- this is the speed at which the driver ceases
@@ -203,12 +214,19 @@ void L64XX::setStallCurrent(float ma_current) {
   SetParam(L6470_STALL_TH, STHValue < STALL_TH_MAX ? STHValue : STALL_TH_MAX);
 }
 
+// only in L6474
+//  NOTE - TVAL register address is the same as the KVAL_HOLD register on the other L64xx devices
+void L64XX::setTVALCurrent(float ma_current) {
+  if (ma_current > STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX +1)) ma_current = STALL_CURRENT_CONSTANT_INV * (STALL_TH_MAX +1);  // keep the STALL_TH calc from overflowing 8 bits
+  const uint8_t STHValue = (uint8_t)floor(uint8_t(ma_current * STALL_CURRENT_CONSTANT - 1));
+  SetParam(L6474_TVAL, STHValue < STALL_TH_MAX ? STHValue : STALL_TH_MAX);
+}
 // Enable or disable the low-speed optimization option. If enabling,
 //  the other 12 bits of the register will be automatically zero.
 //  When disabling, the value will have to be explicitly written by
 //  the user with a SetParam() call. See the datasheet for further
 //  information about low-speed optimization.
-void L64XX::SetLowSpeedOpt(const boolean enable) {
+void L64XX::SetLowSpeedOpt(const uint8_t enable) {
   Xfer(dSPIN_SET_PARAM | L6470_MIN_SPEED);
   Param(enable ? 0x1000 : 0, 13);
 }
@@ -445,15 +463,13 @@ uint32_t L64XX::Param(uint32_t value, const uint8_t bit_len) {
 
 uint8_t L64XX::Xfer(uint8_t data) {
 
-  if (pin_SCK < 0) {                                      // External SPI
-    return uint8_t(
-      position ? helper.transfer(data, pin_SS, position)  // ... in a chain
-               : helper.transfer(data, pin_SS)            // ... not chained
+  if (pin_SCK < 0)                                      // External SPI
+    return (uint8_t) (
+      position ? chain_transfer(data, pin_SS, position) // ... in a chain
+               : transfer(data, pin_SS)                 // ... not chained
     );
-  }
 
   // if pin_SCK is set use internal soft SPI.
-
   if (position == 0) {                            // Internal soft SPI, not in a chain
     if (pin_SS >= 0) digitalWrite(pin_SS, LOW);   // Allow external code to control SS_PIN
     uint8_t bits = 8;
