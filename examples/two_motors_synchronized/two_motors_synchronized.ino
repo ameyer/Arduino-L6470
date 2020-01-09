@@ -39,7 +39,7 @@
 
 class TwoMotors : public L64XXHelper {
 public:
-  TwoMotors() { L64XX::set_helper(*this); }
+  TwoMotors() { L64XX::set_helper(this); }
 
   /**
    * Initialize pins for non-library SPI software
@@ -111,6 +111,7 @@ public:
   }
 
   static inline void goTo(long location_1, long location_2) {
+    return;
     // the command string to move a stepper to an absolute position is
     // four uint8_t long so four arraya are used for convenience
 
@@ -130,6 +131,7 @@ public:
   }
 
   static inline void _setup() {
+
     pinMode(RESET_PIN,OUTPUT);        // Reset all drivers
     digitalWrite(RESET_PIN, LOW);     // Do this before any setup commands are sent to the drivers
     delay(10);
@@ -179,4 +181,5 @@ powerSTEP01 TwoMotors::stepperC(SS_PIN);
 TwoMotors two_motors;
 
 void setup() { two_motors._setup(); }
+
 void loop() { two_motors._loop(); }

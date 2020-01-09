@@ -3,9 +3,12 @@
 // ORIGINAL CODE 12 Dec 2011 Mike Hord, SparkFun Electronics      //
 //                                                                //
 // LIBRARY Created by Adam Meyer (@ameyer) of bildr 18 Aug 2012   //
-//   Modified by Scott Lahteine (@thinkyhead) 6 Mar 2018          //
-//   Chain and SPI updates by Bob Kuhn (@bob-the-kuhn) 6 Jan 2019 //
 //   Released as MIT license                                      //
+//                                                                //
+//   Changes:                                                     //
+//     Scott Lahteine (@thinkyhead) - Cleanup       06 Mar 2018   //
+//     Bob Kuhn (@bob-the-kuhn)     - Chain / SPI   06 Jan 2019   //
+//     Scott Lahteine (@thinkyhead) - L64XXHelper   01 Mar 2019   //
 //                                                                //
 ////////////////////////////////////////////////////////////////////
 
@@ -14,7 +17,7 @@
 #include <Arduino.h>
 
 L64XXHelper nullHelper;
-L64XXHelper& L64XX::helper = nullHelper;
+L64XXHelper* L64XX::helper = &nullHelper;
 
 uint8_t L64XX::chain[21];
 
@@ -32,7 +35,7 @@ void L64XX::init() {
   //  most significant bit first,
   //  SPI clock not to exceed 5MHz,
   //  SPI_MODE3 (clock idle high, latch data on rising edge of clock)
-  if (pin_SCK < 0) helper.spi_init();  // Use external SPI init function to init it
+  if (pin_SCK < 0) helper->spi_init();  // Use external SPI init function to init it
                                        // internal SPI already initialized
 
   // First things first: let's check communications. The L64XX_CONFIG register should
@@ -47,7 +50,7 @@ void L64XX::init() {
   //   - SYNC_SEL_x is the ratio of (micro)steps to toggles on the
   //     BUSY/SYNC pin (when that pin is used for SYNC). Make it 1:1, despite
   //     not using that pin.
-  //SetParam(L6470_STEP_MODE, !SYNC_EN | STEP_SEL_1 | SYNC_SEL_1);
+  //SetParam(L6470_STEP_MODE, BUSY_EN | STEP_SEL_1 | SYNC_SEL_1);
 
   // Set up the L64XX_CONFIG register as follows:
   //  PWM frequency divisor = 1
@@ -127,15 +130,15 @@ void L64XX::set_pins(const _pin_t sck, const _pin_t mosi, const _pin_t miso, con
   }
 }
 
-boolean L64XX::isBusy() { return !(getStatus() & 0x0002); }
+bool L64XX::isBusy() { return !(getStatus() & 0x0002); }
 
 void L64XX::setMicroSteps(int16_t microSteps) {
-  uint8_t stepVal;
-  for (stepVal = 0; stepVal < 8; stepVal++) {
+  uint8_t stepSel;
+  for (stepSel = 0; stepSel < 8; stepSel++) {
     if (microSteps == 1) break;
     microSteps >>= 1;
   }
-  SetParam(L6470_STEP_MODE, !SYNC_EN | stepVal | SYNC_SEL_1);
+  SetParam(L6470_STEP_MODE, BUSY_EN | SYNC_SEL_1 | stepSel);
 }
 
 // Configure the L6470_FS_SPD register- this is the speed at which the driver ceases
@@ -205,7 +208,7 @@ void L64XX::setStallCurrent(float ma_current) {
 //  When disabling, the value will have to be explicitly written by
 //  the user with a SetParam() call. See the datasheet for further
 //  information about low-speed optimization.
-void L64XX::SetLowSpeedOpt(const boolean enable) {
+void L64XX::SetLowSpeedOpt(const bool enable) {
   Xfer(dSPIN_SET_PARAM | L6470_MIN_SPEED);
   Param(enable ? 0x1000 : 0, 13);
 }
@@ -444,8 +447,8 @@ uint8_t L64XX::Xfer(uint8_t data) {
 
   if (pin_SCK < 0) {                                      // External SPI
     return uint8_t(
-      position ? helper.transfer(data, pin_SS, position)  // ... in a chain
-               : helper.transfer(data, pin_SS)            // ... not chained
+      position ? helper->transfer(data, pin_SS, position)  // ... in a chain
+               : helper->transfer(data, pin_SS)            // ... not chained
     );
   }
 
