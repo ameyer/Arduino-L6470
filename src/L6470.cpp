@@ -546,10 +546,10 @@ uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
   //  Xfer() directly.
 
   // These defines help handle the register address differences between L6470, L6480 & powerSTEP01
-  #define L64XX_CONFIG_A  0x18  // L6470: L64XX_CONFIG, L6480 & powerSTEP01: L6470_GATECFG1
-  #define L64XX_STATUS_A  0x19  // L6470: L64XX_STATUS, L6480 & powerSTEP01: L6470_GATECFG2
-  #define L64XX_CONFIG_B  0x1A  // L6480 & powerSTEP01: L64XX_CONFIG
-  #define L64XX_STATUS_B  0x1B  // L6480 & powerSTEP01: L64XX_STATUS
+  #define L64XX_CONFIG_A  0x18  // L6470 & L6474: CONFIG ... L6480 & powerSTEP01: L6470_GATECFG1
+  #define L64XX_STATUS_A  0x19  // L6470 & L6474: STATUS ... L6480 & powerSTEP01: L6470_GATECFG2
+  #define L64XX_CONFIG_B  0x1A  // L6480 & powerSTEP01: CONFIG
+  #define L64XX_STATUS_B  0x1B  // L6480 & powerSTEP01: STATUS
 
   switch (param) {
     // L6470_ABS_POS is the current absolute offset from home. It is a 22 bit number expressed
@@ -658,18 +658,18 @@ uint32_t L64XX::ParamHandler(const uint8_t param, const uint32_t value) {
     //  to the datasheet before modifying the contents of this register to be certain they
     //  understand the implications of their modifications. Value on boot is 0x2E88; this
     //  can be a useful way to verify proper start up and operation of the dSPIN chip.
-    case L64XX_CONFIG_A:     if (L6470_status_layout) return Param(value, 16);  // L6470 CONFIG register
-                             else return Param(uint16_t(value & 0x07ff), 11);   // L6480 & powerSTEP01 GATECFG1 register
-    case L64XX_CONFIG_B:     if (L6470_status_layout) return Param(value, 16);  // L6480 & powerSTEP01 CONFIG register
+    case L64XX_CONFIG_A:     if (L6470_status_layout == L6480_STATUS_LAYOUT) return Param(uint16_t(value & 0x07FF), 11);   // L6480 & powerSTEP01: GATECFG1 register
+                             else                                            return Param(value, 16);                      // L6470 & L6474: CONFIG register
+    case L64XX_CONFIG_B:     return Param(value, 16);                                                                      // L6480 & powerSTEP01: CONFIG register
 
 
     // L64XX_STATUS contains read-only information about the current condition of the chip. A
     //  comprehensive set of constants for masking and testing this register is provided, but
     //  users should refer to the datasheet to ensure that they fully understand each one of
     //  the bits in the register.
-    case L64XX_STATUS_A:     if (L6470_status_layout) return Param(value, 16);  // L46470 STATUS register
-                             else return Xfer(uint8_t(value));                  // L6480 & powerSTEP01 GATECFG2 register
-    case L64XX_STATUS_B:     return Param(0, 16);                               // L6480 & powerSTEP01 STATUS register
+    case L64XX_STATUS_A:     if (L6470_status_layout == L6480_STATUS_LAYOUT) return Xfer(uint8_t(value));   // L6480 & powerSTEP01: GATECFG2 register
+                             else                                            return Param(value, 16);       // L6470 & L6474: STATUS register
+    case L64XX_STATUS_B:     return Param(0, 16);                                                           // L6480 & powerSTEP01 STATUS register
 
   }
   return Xfer(uint8_t(value));

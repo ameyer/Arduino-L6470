@@ -192,7 +192,7 @@
 // status register layouts
 #define L6470_STATUS_LAYOUT            0x0000
 #define L6474_STATUS_LAYOUT            0x0001
-#define L6480_STATUS_LAYOUT            0x0003
+#define L6480_STATUS_LAYOUT            0x0002
 
 
 // Status register bit renames- read-only bits conferring information about the
@@ -384,7 +384,7 @@ public:
   void goTo(long pos);
   void goTo_DIR(const uint8_t dir, long pos);
   void goUntil(const uint8_t act, const uint8_t dir, uint32_t spd);
-  
+
   uint8_t isBusy();
 
   void releaseSW(const uint8_t act, const uint8_t dir);
@@ -420,12 +420,12 @@ public:
   uint8_t L64XX_CONFIG;             // CONFIG register address
   uint8_t L64XX_STATUS;             // STATUS register address
 
-  uint8_t L6470_status_layout;      // true: L6470 layout, false: L6480/powerSTEP01 layout
+  uint8_t L6470_status_layout;
 
   // status bit locations
   uint16_t STATUS_NOTPERF_CMD;      // Last command not performed.
   uint16_t STATUS_WRONG_CMD;        // Last command not valid.
-  uint16_t STATUS_CMD_ERR;           // Command error
+  uint16_t STATUS_CMD_ERR;          // Command error
   uint16_t STATUS_UVLO;             // Undervoltage lockout is active
   uint16_t STATUS_TH_WRN;           // Thermal warning
   uint16_t STATUS_TH_SD;            // Thermal shutdown
@@ -457,10 +457,10 @@ public:
     init(ss_pin);
     L6470::OCD_TH_MAX = 15;
     L6470::STALL_TH_MAX = 127;
-    L6470::OCD_CURRENT_CONSTANT_INV = 375.0f;                                             //  mA per count
-    L6470::OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;                     //  counts per mA
+    L6470::OCD_CURRENT_CONSTANT_INV = 375.0f;                                          //  mA per count
+    L6470::OCD_CURRENT_CONSTANT = 1.0f / L6470::OCD_CURRENT_CONSTANT_INV;              //  counts per mA
     L6470::STALL_CURRENT_CONSTANT_INV = 31.25;                                         //  mA per count
-    L6470::STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV;                 //  counts per mA
+    L6470::STALL_CURRENT_CONSTANT = 1.0f / L6470::STALL_CURRENT_CONSTANT_INV;          //  counts per mA
 
     L6470::L64XX_CONFIG         = 0x18;
     L6470::L64XX_STATUS         = 0x19;
@@ -486,10 +486,10 @@ public:
 
     L6470::OCD_TH_MAX = 15;
     L6470::STALL_TH_MAX = 127;
-    L6470::OCD_CURRENT_CONSTANT_INV = 375.0f;                                             //  mA per count
-    L6470::OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;                     //  counts per mA
+    L6470::OCD_CURRENT_CONSTANT_INV = 375.0f;                                          //  mA per count
+    L6470::OCD_CURRENT_CONSTANT = 1.0f / L6470::OCD_CURRENT_CONSTANT_INV;              //  counts per mA
     L6470::STALL_CURRENT_CONSTANT_INV = 31.25;                                         //  mA per count
-    L6470::STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV;                 //  counts per mA
+    L6470::STALL_CURRENT_CONSTANT = 1.0f / L6470::STALL_CURRENT_CONSTANT_INV;          //  counts per mA
 
     L6470::L64XX_CONFIG         = 0x18;
     L6470::L64XX_STATUS         = 0x19;
@@ -519,11 +519,11 @@ public:
   L6474(const _pin_t ss_pin) {
     init(ss_pin);
     L6474::OCD_TH_MAX = 15;
-    L6474::STALL_TH_MAX = 127;                                                           //  STALL function not implemented on L6474
-    L6474::OCD_CURRENT_CONSTANT_INV = 375.0f;                                             //  mA per count
-    L6474::OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;                     //  counts per mA
+    L6474::STALL_TH_MAX = 127;                                                         //  STALL function not implemented on L6474
+    L6474::OCD_CURRENT_CONSTANT_INV = 375.0f;                                          //  mA per count
+    L6474::OCD_CURRENT_CONSTANT = 1.0f / L6474::OCD_CURRENT_CONSTANT_INV;              //  counts per mA
     L6474::STALL_CURRENT_CONSTANT_INV = 31.25;                                         //  mA per count
-    L6474::STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV;                 //  counts per mA
+    L6474::STALL_CURRENT_CONSTANT = 1.0f / L6474::STALL_CURRENT_CONSTANT_INV;          //  counts per mA
 
     L6474::L64XX_CONFIG         = 0x18;
     L6474::L64XX_STATUS         = 0x19;
@@ -549,10 +549,10 @@ public:
 
     L6474::OCD_TH_MAX = 15;
     L6474::STALL_TH_MAX = 127;
-    L6474::OCD_CURRENT_CONSTANT_INV = 375.0f;                                             //  mA per count
-    L6474::OCD_CURRENT_CONSTANT = 1.0f / OCD_CURRENT_CONSTANT_INV;                     //  counts per mA
+    L6474::OCD_CURRENT_CONSTANT_INV = 375.0f;                                          //  mA per count
+    L6474::OCD_CURRENT_CONSTANT = 1.0f / L6474::OCD_CURRENT_CONSTANT_INV;              //  counts per mA
     L6474::STALL_CURRENT_CONSTANT_INV = 31.25;                                         //  mA per count
-    L6474::STALL_CURRENT_CONSTANT = 1.0f / STALL_CURRENT_CONSTANT_INV;                 //  counts per mA
+    L6474::STALL_CURRENT_CONSTANT = 1.0f / L6474::STALL_CURRENT_CONSTANT_INV;          //  counts per mA
 
     L6474::L64XX_CONFIG         = 0x18;
     L6474::L64XX_STATUS         = 0x19;
@@ -588,7 +588,7 @@ public:
 
     L6480::OCD_TH_MAX = 31;
     L6480::STALL_TH_MAX = 31;
-    L6480::OCD_CURRENT_CONSTANT_INV = 31.25;                                           //  mA per count
+    L6480::OCD_CURRENT_CONSTANT_INV = 375.0f;                                          //  mA per count
     L6480::OCD_CURRENT_CONSTANT = 1.0f / L6480::OCD_CURRENT_CONSTANT_INV;              //  counts per mA
     L6480::STALL_CURRENT_CONSTANT_INV = 31.25;                                         //  mA per count
     L6480::STALL_CURRENT_CONSTANT = 1.0f / L6480::STALL_CURRENT_CONSTANT_INV;          //  counts per mA
@@ -597,7 +597,7 @@ public:
     L6480::L64XX_CONFIG         = 0x1A;
     L6480::L64XX_STATUS         = 0x1B;
 
-    L6470_status_layout = L6480_STATUS_LAYOUT;
+    L6480::L6470_status_layout = L6480_STATUS_LAYOUT;
 
     L6480::STATUS_WRONG_CMD    = 0x0080;                                               // Last command not valid.
     L6480::STATUS_CMD_ERR      = 0x0080;                                               // Command error
@@ -616,7 +616,7 @@ public:
 
     L6480::OCD_TH_MAX = 31;
     L6480::STALL_TH_MAX = 31;
-    L6480::OCD_CURRENT_CONSTANT_INV = 31.25;                                          //  mA per count
+    L6480::OCD_CURRENT_CONSTANT_INV = 375.0f;                                         //  mA per count
     L6480::OCD_CURRENT_CONSTANT = 1.0f / L6480::OCD_CURRENT_CONSTANT_INV;             //  counts per mA
     L6480::STALL_CURRENT_CONSTANT_INV = 31.25;                                        //  mA per count
     L6480::STALL_CURRENT_CONSTANT = 1.0f / L6480::STALL_CURRENT_CONSTANT_INV;         //  counts per mA
@@ -625,7 +625,7 @@ public:
     L6480::L64XX_CONFIG         = 0x1A;
     L6480::L64XX_STATUS         = 0x1B;
 
-    L6470_status_layout = L6480_STATUS_LAYOUT;
+    L6480::L6470_status_layout = L6480_STATUS_LAYOUT;
 
     L6480::STATUS_WRONG_CMD    = 0x0080;                                              // Last command not valid.
     L6480::STATUS_CMD_ERR      = 0x0080;                                              // Command error
@@ -638,13 +638,6 @@ public:
     L6480::STATUS_STEP_LOSS_B  = 0x8000;                                              // Stall detected on B bridge
     L6480::STATUS_SCK_MOD      = 0x0100;                                              // Step clock mode is active
    }
-
-  //static constexpr float L6480_AVERAGE_RDS = 0.016;                                 //  Ohms - L6480 use external FETs so this may be user modified
-  //L6480::OCD_CURRENT_CONSTANT = (L6480_AVERAGE_RDS/0.03125)/1000;                   //  counts per mA (calc per data sheet - definitely wrong)
-  //L6480::OCD_CURRENT_CONSTANT_INV = (1000 * 0.03125)/(L6480_AVERAGE_RDS);           //  mA per count  (calc per data sheet - definitely wrong)
-  //L6480::STALL_CURRENT_CONSTANT = OCD_CURRENT_CONSTANT;                             //  counts per mA (calc per data sheet - definitely wrong)
-  //L6480::STALL_CURRENT_CONSTANT_INV = OCD_CURRENT_CONSTANT_INV;                     //  mA per count  (calc per data sheet - definitely wrong)
-
 };
 
 class powerSTEP01 : public L6480_Base {
@@ -679,8 +672,8 @@ public:
   powerSTEP01(const _pin_t ss_pin, L64XXHelper *_helper) {
     init(ss_pin, _helper);
 
-    powerSTEP01::OCD_TH_MAX = 5;
-    powerSTEP01::STALL_TH_MAX = 5;
+    powerSTEP01::OCD_TH_MAX = 31;
+    powerSTEP01::STALL_TH_MAX = 31;
     powerSTEP01::OCD_CURRENT_CONSTANT       = 0.001;                                  //  counts per mA (empirically derived for powerSTEP01)
     powerSTEP01::OCD_CURRENT_CONSTANT_INV   = 1000;                                   //  mA per count  (empirically derived for powerSTEP01)
     powerSTEP01::STALL_CURRENT_CONSTANT     = 0.005;                                  //  counts per mA (empirically derived for powerSTEP01)
