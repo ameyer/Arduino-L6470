@@ -23,6 +23,6 @@
         "name": "Scott Lahteine"
     }
   ],
-  "frameworks": "*",
-  "platforms": "avr,sam"
+  "frameworks": "arduino",
+  "platforms": "atmelavr, atmelsam"
 }
