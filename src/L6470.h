@@ -200,10 +200,10 @@
 
 // Status register motor status field
 #define STATUS_MOT_STATUS                0x0060      // field mask
-#define STATUS_MOT_STATUS_STOPPED       (0x0000<<13) // Motor stopped
-#define STATUS_MOT_STATUS_ACCELERATION  (0x0001<<13) // Motor accelerating
-#define STATUS_MOT_STATUS_DECELERATION  (0x0002<<13) // Motor decelerating
-#define STATUS_MOT_STATUS_CONST_SPD     (0x0003<<13) // Motor at constant speed
+#define STATUS_MOT_STATUS_STOPPED       (0x0000<<5)  // Motor stopped
+#define STATUS_MOT_STATUS_ACCELERATION  (0x0001<<5)  // Motor accelerating
+#define STATUS_MOT_STATUS_DECELERATION  (0x0002<<5)  // Motor decelerating
+#define STATUS_MOT_STATUS_CONST_SPD     (0x0003<<5)  // Motor at constant speed
 
 // Register address redefines.
 //  See the Param_Handler() function for more info about these.
