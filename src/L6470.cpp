@@ -325,6 +325,8 @@ void L64XX::setMark() {
   Xfer(uint8_t(value));
 }
 
+long L64XX::getMark() { return convert(GetParam(L6470_MARK)); }
+
 // Sets the L6470_ABS_POS register to 0, effectively declaring the current
 //  position to be "HOME".
 void L64XX::setAsHome() { Xfer(dSPIN_RESET_POS); }
